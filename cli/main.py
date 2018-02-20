@@ -35,10 +35,12 @@ def cli(ctx, region, profile):
     """AWS ECS deploy tools"""
     session = boto3.session.Session(profile_name=profile, region_name=region)
     ecs = session.client('ecs')
+    ecr = session.client('ecr')
     ctx.obj = {
         'region': region,
         'profile': profile,
-        'ecs': ecs
+        'ecs': ecs,
+        'ecr': ecr
     }
     pass
 
