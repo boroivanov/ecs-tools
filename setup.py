@@ -23,7 +23,7 @@ def find_version(*file_paths):
 
 requirements = [
     'Click>=6.0',
-    'boto3>=1.3.1',
+    'boto3>=1.5.33',
     'reprint>=0.5.1'
 ]
 
