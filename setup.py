@@ -1,4 +1,24 @@
+import codecs
+import os.path
+import re
+
 from setuptools import setup, find_packages
+
+
+here = os.path.abspath(os.path.dirname(__file__))
+
+
+def read(*parts):
+    return codecs.open(os.path.join(here, *parts), 'r').read()
+
+
+def find_version(*file_paths):
+    version_file = read(*file_paths)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError('Unable to find version string.')
 
 
 requirements = [
@@ -9,23 +29,17 @@ requirements = [
 
 setup(
     name="ecs-tools",
-    version='0.0.1',
+    version=find_version('ecstools', '__init__.py'),
     url="https://github.com/boroivanov/ecs-tools",
 
-    author="Borislav Ivanov",
-    author_email="borogl@gmail.com",
+    author='Borislav Ivanov',
+    author_email='borogl@gmail.com',
 
-    description="Utilities for AWS ECS",
+    description='Utilities for AWS ECS',
 
     packages=find_packages(),
     install_requires=requirements,
     include_package_data=True,
-    # scripts=['main.py'],
-    # packages=[
-    #     'cli',
-    #     'cli.lib',
-    #     'cli.commands'
-    # ],
     package_dir={'ecstools':
                  'ecstools'},
     entry_points={
