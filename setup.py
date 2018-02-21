@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 requirements = [
     'Click>=6.0',
-    'boto3>=1.3.1'
+    'boto3>=1.3.1',
     'reprint>=0.5.1'
 ]
 
