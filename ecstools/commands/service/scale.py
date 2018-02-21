@@ -1,6 +1,6 @@
 import click
 
-import lib.utils as utils
+import ecstools.lib.utils as utils
 
 
 @click.command()

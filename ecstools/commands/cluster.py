@@ -1,16 +1,21 @@
 import os
 import click
+import string
+import inspect
 
-wk_dir = os.path.dirname(os.path.realpath('__file__'))
-plugin_folder = os.path.join(wk_dir, 'cli/commands/service')
+wk_file = inspect.getfile(inspect.currentframe())
+wk_dir = os.path.dirname(os.path.abspath(wk_file))
+sub_dir = wk_file[:-3]
+plugin_folder = os.path.join(wk_dir, sub_dir)
 
 
-class MyServiceCLI(click.MultiCommand):
+class MyClusterCLI(click.MultiCommand):
 
     def list_commands(self, ctx):
         rv = []
+        alpha = string.ascii_letters
         for filename in os.listdir(plugin_folder):
-            if filename.endswith('.py'):
+            if filename.startswith(tuple(alpha)) and filename.endswith('.py'):
                 rv.append(filename[:-3])
         rv.sort()
         return rv
@@ -24,8 +29,8 @@ class MyServiceCLI(click.MultiCommand):
         return ns['cli']
 
 
-@click.group(cls=MyServiceCLI)
+@click.group(cls=MyClusterCLI)
 @click.pass_context
 def cli(ctx):
-    """Manage and deploy services"""
+    """Manage clusters"""
     pass

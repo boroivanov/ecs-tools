@@ -1,8 +1,10 @@
 import os
 import boto3
 import click
+import string
 
-version = '0.0.1'
+from ecstools import __version__
+
 
 plugin_folder = os.path.join(os.path.dirname(__file__), 'commands')
 
@@ -11,8 +13,9 @@ class MyCLI(click.MultiCommand):
 
     def list_commands(self, ctx):
         rv = []
+        alpha = string.ascii_letters
         for filename in os.listdir(plugin_folder):
-            if filename.endswith('.py'):
+            if filename.startswith(tuple(alpha)) and filename.endswith('.py'):
                 rv.append(filename[:-3])
         rv.sort()
         return rv
@@ -28,7 +31,7 @@ class MyCLI(click.MultiCommand):
 
 @click.group(cls=MyCLI)
 @click.pass_context
-@click.version_option(version=version, message=version)
+@click.version_option(version=__version__, message=__version__)
 @click.option('-p', '--profile', help='AWS profile')
 @click.option('-r', '--region', help='AWS region')
 def cli(ctx, region, profile):
