@@ -1,5 +1,6 @@
 import click
 import sys
+import copy
 
 import ecstools.lib.utils as utils
 
@@ -47,7 +48,7 @@ def cli(ctx, cluster, service, pairs):
 
     validate_pairs(pairs)
 
-    envs = container['environment'][:]
+    envs = copy.deepcopy(container['environment'])
 
     # Update env var if it exist. Otherwise append it.
     for pair in pairs:
@@ -67,6 +68,12 @@ def cli(ctx, cluster, service, pairs):
         if not matched:
             click.echo('+ %s=%s' % (k, v))
             envs.append({'name': k, 'value': v})
+
+    # Compare new and old environment variables
+    if envs == container['environment']:
+        # Nothing was updated. No need to create task definition.
+        click.echo('\nNo updates')
+        sys.exit(0)
 
     click.echo()
     try:
