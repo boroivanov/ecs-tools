@@ -10,7 +10,7 @@ import ecstools.lib.utils as utils
 @click.argument('pairs', nargs=-1)
 # @click.option('-c', '--container', help='Optional container name')
 @click.pass_context
-def cli(ctx, cluster, service, container, pairs):
+def cli(ctx, cluster, service, pairs):
     """Manage environment variables
 
     |\b
