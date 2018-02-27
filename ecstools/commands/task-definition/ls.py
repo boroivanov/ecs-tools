@@ -9,7 +9,7 @@ import click
 @click.option('-D', '--no-details', is_flag=True, default=False, help='Disable revision details')
 @click.pass_context
 def cli(ctx, name, arn, num, no_details, repo):
-    """List task definitions families / revisions
+    """List families / revisions
 
         |\b
         $ ecs def

@@ -19,6 +19,7 @@ def cli(ctx, cluster, service, artifact, task_definition, count):
     """
     ecs = ctx.obj['ecs']
     ecr = ctx.obj['ecr']
+    elbv2 = ctx.obj['elbv2']
 
     task_def = artifact
     if not task_definition:
@@ -28,7 +29,7 @@ def cli(ctx, cluster, service, artifact, task_definition, count):
     deploy_task_definition(ecs, cluster, service, task_def, count)
 
     click.echo()
-    utils.monitor_deployment(ecs, cluster, service)
+    utils.monitor_deployment(ecs, elbv2, cluster, service)
 
 
 def register_task_def_with_new_image(ecs, ecr, cluster, service, artifact):
@@ -61,7 +62,7 @@ def register_task_def_with_new_image(ecs, ecr, cluster, service, artifact):
     click.echo('Found image: %s:%s' % (ecr_repo, artifact))
 
     ###########################################################################
-    # Force new deployment with the current active task definiton if
+    # Force new deployment with the current active task definition if
     # the requested for docker image tag is the same.
     # We need to recycle cotainers in case the tag was reassigned to different
     # docker image (think tag:latest).

@@ -39,11 +39,13 @@ def cli(ctx, region, profile):
     session = boto3.session.Session(profile_name=profile, region_name=region)
     ecs = session.client('ecs')
     ecr = session.client('ecr')
+    elbv2 = session.client('elbv2')
     ctx.obj = {
         'region': region,
         'profile': profile,
         'ecs': ecs,
-        'ecr': ecr
+        'ecr': ecr,
+        'elbv2': elbv2
     }
     pass
 
