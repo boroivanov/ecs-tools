@@ -68,13 +68,9 @@ def cli(ctx, cluster, service, container, pairs):
             click.echo('+ %s=%s' % (k, v))
             envs.append({'name': k, 'value': v})
 
-    if envs == container['environment']:
-        # Nothing was updated. No need to create task definition
-        sys.exit(0)
-
     click.echo()
     try:
-        c = input('Do you want to create a new task definition? ')
+        c = input('Do you want to create a new task definition revision? ')
         if c not in ['yes', 'Yes', 'y', 'Y']:
             raise
     except:
