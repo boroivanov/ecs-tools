@@ -84,9 +84,12 @@ def cli(ctx, cluster, service, pairs):
         sys.exit(0)
 
     # Register new task definition with the new environment variables
-    td_name = register_task_definition_with_envs(
-        ecs, td, container['name'], envs)
-
+    try:
+        td_name = register_task_definition_with_envs(
+            ecs, td, container['name'], envs)
+    except:
+        sys.exit(0)
+        
     # # Ask to deploy the changes
     try:
         to_deploy = input('Do you want to deploy your changes? ')
