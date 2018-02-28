@@ -5,13 +5,21 @@ import copy
 import ecstools.lib.utils as utils
 
 
+# Support raw input() for both py2 and py3
+try:
+    input = raw_input
+except NameError:
+    pass
+
+
 @click.command(short_help='Manage environment variables')
 @click.argument('cluster', nargs=1)
 @click.argument('service', nargs=1)
 @click.argument('pairs', nargs=-1)
 # @click.option('-c', '--container', help='Optional container name')
+@click.option('-d', '--delete', is_flag=True, help='Delete environment variable')
 @click.pass_context
-def cli(ctx, cluster, service, pairs):
+def cli(ctx, cluster, service, pairs, delete):
     """Manage environment variables
 
     |\b
@@ -46,28 +54,35 @@ def cli(ctx, cluster, service, pairs):
             click.echo('%s=%s' % (e['name'], e['value']))
         sys.exit(0)
 
-    validate_pairs(pairs)
-
     envs = copy.deepcopy(container['environment'])
 
-    # Update env var if it exist. Otherwise append it.
-    for pair in pairs:
-        k, v = pair.split('=', 1)
-        matched = False
-        # Check if env var already exists
-        for e in envs:
-            if k == e['name']:
-                if v != e['value']:
-                    # Env var value is different
+    # Delete variable if '-d' is passed
+    if delete:
+        for pair in pairs:
+            for e in envs:
+                if pair == e['name']:
                     click.echo('- %s=%s' % (e['name'], e['value']))
-                    click.echo('+ ', nl=False)
-                    e['value'] = v
-                click.echo('%s=%s' % (k, v))
-                matched = True
-                break
-        if not matched:
-            click.echo('+ %s=%s' % (k, v))
-            envs.append({'name': k, 'value': v})
+                    envs.remove(e)
+    else:
+        # Update env var if it exist. Otherwise append it.
+        validate_pairs(pairs)
+        for pair in pairs:
+            k, v = pair.split('=', 1)
+            matched = False
+            # Check if env var already exists
+            for e in envs:
+                if k == e['name']:
+                    if v != e['value']:
+                        # Env var value is different
+                        click.echo('- %s=%s' % (e['name'], e['value']))
+                        click.echo('+ ', nl=False)
+                        e['value'] = v
+                    click.echo('%s=%s' % (k, v))
+                    matched = True
+                    break
+            if not matched:
+                click.echo('+ %s=%s' % (k, v))
+                envs.append({'name': k, 'value': v})
 
     # Compare new and old environment variables
     if envs == container['environment']:
@@ -76,10 +91,11 @@ def cli(ctx, cluster, service, pairs):
         sys.exit(0)
 
     click.echo()
+
     try:
         c = input('Do you want to create a new task definition revision? ')
         if c not in ['yes', 'Yes', 'y', 'Y']:
-            raise
+            raise ValueError()
     except:
         sys.exit(0)
 
@@ -91,7 +107,7 @@ def cli(ctx, cluster, service, pairs):
     try:
         to_deploy = input('Do you want to deploy your changes? ')
         if to_deploy not in ['yes', 'Yes', 'y', 'Y']:
-            raise
+            raise ValueError()
     except:
         sys.exit(0)
 
@@ -145,7 +161,7 @@ def container_selection(containers):
     try:
         c = int(input('#? '))
         if int(c) not in range(len(containers) + 1):
-            raise
+            raise ValueError()
     except:
         click.echo('Invalid input')
         sys.exit(1)
