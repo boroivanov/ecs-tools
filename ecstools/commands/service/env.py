@@ -135,7 +135,7 @@ def register_task_definition_with_envs(ecs, current_task_definition, container, 
 
 
 def deploy_task_definition(ecs, cluster, service, task_def):
-    click.secho('Deploing %s to %s %s...' %
+    click.secho('Deploying %s to %s %s...' %
                 (task_def, cluster, service), fg='blue')
     params = {
         'cluster': cluster,
