@@ -42,9 +42,9 @@ $ ecs task-definition ls <task-definition-family> -n 123
 ## Deploying
 The deployments work by specifying cluster, service, and a docker tag.
 
-The cli is going to check the current active task definition associated with the service and get the container name. Then it will create a new task definition revision with the new docker tag and deploy it. If the docker tag passed to the cli is the same as in the current task definition, a new deployment will be forced with the current task definition and containers will be recycled. This cover cases where we are deploying tag 'latest' but the tag was reassigned to a new image.
+The cli is going to check the current active task definition associated with the service and get the container name. Then it will create a new task definition revision with the new docker tag and deploy it. If the docker tag passed to the cli is the same as in the current task definition, a new deployment will be forced with the current task definition and containers will be recycled. This covers cases where we are deploying tag 'latest' but the tag was reassigned to a new image.
 
-The cli also auto-updates when doing a deployment. We get almost real-time information about all deployments for the service (there could be more that one). The output includes information the number for containers in each deployment and their status. The number of containers in an ALB/NLB (if one is configured for the service) and their registration status. At the end we also get the last two events from the ECS service.
+The cli also auto-updates when doing a deployment. We get almost real-time information about all deployments for the service (there could be more that one). The output includes information for the number of containers in each deployment and their status. The number of containers in an ALB/NLB (if one is configured for the service) and their registration status. At the end we also get the last two events from the ECS service.
 
 The cli will assume we are trying to deploy as many containers as there are in the current task definition for the service. If we pass the `-c` flag, we can scale in or out during the deployment.
 
@@ -103,9 +103,9 @@ $ ecs service scale <cluster> <service> 123
 ```
 
 ## Updating environment variables
-Updating environment variables works by specifying cluster, service, and pairs of KEY=VALUE. The cli will get the current
-task definition for the service and then compare its environment variables variables to the ones that were passed. The cli
-will print a git-style diff so we can review the changes. Then it will prompt if we want to register a new task definition and deploy it. Finally, the cli starts printing the default deployment auto-update output.
+Updating environment variables works by specifying cluster, service, and pairs of KEY=VALUE.
+
+The cli will get the current task definition for the service and then compare its environment variables with the ones that were passed. The cli will print a git-style diff so we can review the changes. Then it will prompt if we want to register a new task definition and deploy it. Finally, the cli starts printing the default deployment auto-update output.
 
 Once the cli triggers the deploy and gets to the auto-update screen we can cancel the command if we want. The deployment is going to continue. We can always go back to monitor it with `ecs service top <cluster> <service>`
 
@@ -135,7 +135,7 @@ Do you want to create a new task definition revision?
 ```
 
 ## Monitoring
-We can either describe a service or "top" it. Both print information about the current task definition, the number of containers and their status in ECS and ALB/NLB. In addition, the describe command prints information about the subnets and security groups. On the other side, the top command auto-updates. The top command is useful if we want to monitor the progress of a deployment of scaling event which we triggered by exited out of the deploy or scale commands.
+We can either describe a service or "top" it. Both print information about the current task definition, the number of containers and their status in ECS and ALB/NLB. In addition, the describe command prints information about the subnets and security groups. On the other side, the top command auto-updates. The top command is useful if we want to monitor the progress of a deployment or a scaling event which we triggered by exited out of the deploy or scale commands.
 
 ```bash
 # Describe a service
