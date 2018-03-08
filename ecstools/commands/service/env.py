@@ -34,7 +34,7 @@ def cli(ctx, cluster, service, pairs, delete):
 
     srv = desc_service(ecs, cluster, service)
     td_arn = srv['taskDefinition']
-    click.secho('Current task deinition for %s %s: %s' %
+    click.secho('Current task definition for %s %s: %s' %
                 (cluster, service, td_arn.split('/')[-1]), fg='blue')
     td = desc_task_definition(ecs, td_arn)
     containers = td['containerDefinitions']

@@ -91,7 +91,7 @@ def register_task_def_with_new_image(ecs, ecr, cluster, service, artifact):
 
 def deploy_task_definition(ecs, cluster, service, task_def, count):
     click.secho('Deploying %s to %s %s...' %
-                (task_def, cluster, service), fg='blue')
+                (task_def.split('/')[-1], cluster, service), fg='blue')
     params = {
         'cluster': cluster,
         'service': service,
