@@ -113,6 +113,9 @@ Once the cli triggers the deploy and gets to the auto-update screen we can cance
 # List environment variables
 $ ecs service env <cluster> <service>
 
+# Set/Update environment variables from a file
+$ ecs service env cluster1 app1 "$(< file.txt)"
+
 # Set/Update environment variables
 $ ecs service env cluster1 app1 TEST1=123 TEST2=456
 Current task definition for cluster1 app1: app1-task-def:123
