@@ -1,0 +1,18 @@
+dist: trusty
+language: python
+python: 2.7
+
+notifications:
+  email: false
+
+script: echo Tests go here.
+
+deploy:
+  provider: pypi
+  distributions: sdist bdist_wheel
+  skip_upload_docs: true
+  user: boroivanov
+  password: $PYPI_PASS
+  on:
+    tags: true
+    repo: boroivanov/ecs-tools
