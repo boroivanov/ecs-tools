@@ -1,4 +1,7 @@
 import click
+import sys
+
+from botocore.exceptions import ClientError
 
 
 @click.command(short_help='List tasks definitions families / revisions')
@@ -50,7 +53,12 @@ def cli(ctx, name, arn, num, no_details, repo):
                 click.echo(d)
                 continue
 
-            res = ecs.describe_task_definition(taskDefinition=d)
+            try:
+                res = ecs.describe_task_definition(taskDefinition=d)
+            except ClientError as e:
+                click.echo(e.response['Error']['Message'], err=True)
+                sys.exit(1)
+
             td = res['taskDefinition']
             containers = td['containerDefinitions']
             click.secho('%s cpu: %s memory: %s' %

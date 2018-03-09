@@ -4,6 +4,8 @@ import boto3
 import click
 import string
 
+from botocore.exceptions import ProfileNotFound, NoRegionError
+
 from ecstools import __version__
 
 
@@ -40,10 +42,20 @@ class MyCLI(click.MultiCommand):
 @click.option('-r', '--region', help='AWS region')
 def cli(ctx, region, profile):
     """AWS ECS deploy tools"""
-    session = boto3.session.Session(profile_name=profile, region_name=region)
-    ecs = session.client('ecs')
-    ecr = session.client('ecr')
-    elbv2 = session.client('elbv2')
+    try:
+        sess = boto3.session.Session(profile_name=profile, region_name=region)
+    except ProfileNotFound as e:
+        click.echo(e, err=True)
+        sys.exit(1)
+
+    try:
+        ecs = sess.client('ecs')
+        ecr = sess.client('ecr')
+        elbv2 = sess.client('elbv2')
+    except NoRegionError as e:
+        click.echo(e, err=True)
+        sys.exit(1)
+
     ctx.obj = {
         'region': region,
         'profile': profile,

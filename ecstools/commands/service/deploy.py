@@ -1,4 +1,7 @@
 import click
+import sys
+
+from botocore.exceptions import ClientError
 
 import ecstools.lib.utils as utils
 
@@ -48,17 +51,25 @@ def register_task_def_with_new_image(ecs, ecr, cluster, service, artifact):
         ecr_repo = containers[0]['image']
 
     # Check if image tag exist in the ECR repo
-    ecr.describe_images(
-        repositoryName=ecr_repo.split('/')[-1],
-        imageIds=[
-            {
-                'imageTag': artifact
-            },
-        ],
-        filter={
-            'tagStatus': 'TAGGED'
-        }
-    )
+    try:
+        ecr.describe_images(
+            repositoryName=ecr_repo.split('/')[-1],
+            imageIds=[
+                {
+                    'imageTag': artifact
+                },
+            ],
+            filter={
+                'tagStatus': 'TAGGED'
+            }
+        )
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ImageNotFoundException':
+            click.echo('Image not found: %s' % e, err=True)
+        else:
+            click.echo(e, err=True)
+        sys.exit(1)
+
     click.echo('Found image: %s:%s' % (ecr_repo, artifact))
 
     ###########################################################################
@@ -107,11 +118,23 @@ def deploy_task_definition(ecs, cluster, service, task_def, count):
 
 
 def desc_service(ecs, cluster, service):
-    res = ecs.describe_services(
-        cluster=cluster,
-        services=[service]
-    )
-    return res['services'][0]
+    try:
+        res = ecs.describe_services(
+            cluster=cluster,
+            services=[service]
+        )
+        srv = res['services'][0]
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ClusterNotFoundException':
+            click.echo('Cluster not found.', err=True)
+        else:
+            click.echo(e, err=True)
+        sys.exit(1)
+    except:
+        click.echo('Service not found.', err=True)
+        sys.exit(1)
+
+    return srv
 
 
 def desc_task_definition(ecs, taskDefinition):

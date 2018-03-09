@@ -1,4 +1,8 @@
+import click
 import time
+import sys
+
+from botocore.exceptions import ClientError
 
 from reprint import output
 
@@ -15,11 +19,21 @@ def monitor_deployment(ecs, elbv2, cluster, service):
     # Reprint service and deployments info
     with output(initial_len=20, interval=0) as out:
         while True:
-            response = ecs.describe_services(
-                cluster=cluster,
-                services=[service]
-            )
-            s = response['services'][0]
+            try:
+                response = ecs.describe_services(
+                    cluster=cluster,
+                    services=[service]
+                )
+                s = response['services'][0]
+            except ClientError as e:
+                if e.response['Error']['Code'] == 'ClusterNotFoundException':
+                    click.echo('Cluster not found.', err=True)
+                else:
+                    click.echo(e, err=True)
+                sys.exit(1)
+            except:
+                click.echo('Service not found.', err=True)
+                sys.exit(1)
 
             global idx
             idx = 0

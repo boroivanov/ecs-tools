@@ -2,6 +2,8 @@ import click
 import sys
 import copy
 
+from botocore.exceptions import ClientError
+
 import ecstools.lib.utils as utils
 
 
@@ -46,7 +48,7 @@ def cli(ctx, cluster, service, pairs, delete):
 
     click.echo()
 
-    click.secho(('Container: %s' % container['name']), fg='white')
+    click.secho(('==> Container: %s' % container['name']), fg='white')
 
     # Just print env vars if none were passed
     if len(pairs) == 0:
@@ -105,7 +107,7 @@ def cli(ctx, cluster, service, pairs, delete):
             ecs, td, container['name'], envs)
     except:
         sys.exit(0)
-        
+
     # # Ask to deploy the changes
     try:
         to_deploy = input('Do you want to deploy your changes? ')
@@ -173,11 +175,23 @@ def container_selection(containers):
 
 
 def desc_service(ecs, cluster, service):
-    res = ecs.describe_services(
-        cluster=cluster,
-        services=[service]
-    )
-    return res['services'][0]
+    try:
+        res = ecs.describe_services(
+            cluster=cluster,
+            services=[service]
+        )
+        srv = res['services'][0]
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ClusterNotFoundException':
+            click.echo('Cluster not found.', err=True)
+        else:
+            click.echo(e, err=True)
+        sys.exit(1)
+    except:
+        click.echo('Service not found.', err=True)
+        sys.exit(1)
+
+    return srv
 
 
 def desc_task_definition(ecs, taskDefinition):

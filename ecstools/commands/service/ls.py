@@ -1,4 +1,7 @@
 import click
+import sys
+
+from botocore.exceptions import ClientError
 
 
 @click.command()
@@ -8,7 +11,15 @@ import click
 def cli(ctx, cluster, arn):
     """List services"""
     ecs = ctx.obj['ecs']
-    response = ecs.list_services(cluster=cluster, maxResults=100)
+    try:
+        response = ecs.list_services(cluster=cluster, maxResults=100)
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ClusterNotFoundException':
+            click.echo('Cluster not found.', err=True)
+        else:
+            click.echo(e, err=True)
+        sys.exit(1)
+
     services = response['serviceArns']
     while True:
         if 'nextToken' not in response:
