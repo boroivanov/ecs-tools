@@ -15,4 +15,4 @@ deploy:
   password: $PYPI_PASS
   on:
     tags: true
-    repo: boroivanov/ecs-tools
+    repo: boroivanov/ecstools

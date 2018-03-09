@@ -28,7 +28,7 @@ requirements = [
 ]
 
 setup(
-    name="ecs-tools",
+    name="ecstools",
     version=find_version('ecstools', '__init__.py'),
     url="https://github.com/boroivanov/ecs-tools",
 

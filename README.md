@@ -1,10 +1,10 @@
-# ecs-tools
-ecs-tools aims to make deploying to ECS Fargate easier. It also provides an easy way to scale
+# ecstools
+ECS Tools cli aims to make deploying to ECS Fargate easier. It also provides an easy way to scale
 and update environment variables.
 
 # Install
 ```bash
-pip install ecs-tools
+pip install ecstools
 ```
 # Usage
 
