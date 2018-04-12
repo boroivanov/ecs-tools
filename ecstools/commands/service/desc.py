@@ -38,18 +38,18 @@ def cli(ctx, cluster, service):
     click.secho('%s %s %s %s' % (general_info), fg='blue')
     click.secho(('Desired: %s Running: %s Pending: %s' %
                  (counts)), fg='white')
-    click.echo('Created: %s' % s['createdAt'].replace(microsecond=0))
-    click.echo()
 
-    click.echo(s['roleArn'])
-    click.echo()
+    td = get_task_definition(ecs, s['taskDefinition'])
+    containers = td['containerDefinitions']
+    for c in containers:
+        click.echo('Container:        %s' % c['image'].split('/')[-1])
 
     for lb in s['loadBalancers']:
         tgs_state = {}
         if 'loadBalancerName' in lb:
             click.echo('LoadBalancer: %s' % lb['loadBalancerName'])
         if 'targetGroupArn' in lb:
-            click.echo('Target Group: %s' %
+            click.echo('Target Group:     %s' %
                        lb['targetGroupArn'].split('/')[-2], nl=False)
             targets = elbv2.describe_target_health(
                 TargetGroupArn=lb['targetGroupArn'])
@@ -68,9 +68,18 @@ def cli(ctx, cluster, service):
             click.echo('  %s' % states)
         else:
             click.echo()
-    click.echo()
 
     nc = s['networkConfiguration']['awsvpcConfiguration']
     click.echo('Subnets:          %s' % " ".join(nc['subnets']))
     click.echo('Security Groups:  %s' % " ".join(nc['securityGroups']))
     click.echo('Public IP:        %s' % nc['assignPublicIp'])
+    click.echo('Created:          %s' % s['createdAt'].replace(microsecond=0))
+
+
+def get_task_definition(ecs, td_name):
+    try:
+        res = ecs.describe_task_definition(taskDefinition=td_name)
+    except ClientError as e:
+        click.echo(e.response['Error']['Message'], err=True)
+        sys.exit(1)
+    return res['taskDefinition']
