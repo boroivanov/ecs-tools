@@ -38,17 +38,12 @@ def monitor_deployment(ecs, elbv2, cluster, service):
             global idx
             idx = 0
 
-            # # Print Service Info
+            # Print Service Info
             cls_name = s['clusterArn'].split('/')[-1]
-            def_name = s['taskDefinition'].split('/')[-1]
-            general_info = (cls_name, s['serviceName'], def_name)
-            counts = (s['desiredCount'], s['runningCount'], s['pendingCount'])
-            srv_info = general_info + counts
-            out[idx] = '{} {:<24}  {}  desired: {} running: {} pending: {}'.format(
-                *srv_info)
+            srv_name = s['serviceName']
+            out[idx] = '{} {} deployments:'.format(cls_name, srv_name)
 
             out[index()] = '\n'
-            out[index()] = 'Deployments:'
 
             # # Print Deployments Info
             for d in s['deployments']:
@@ -60,11 +55,21 @@ def monitor_deployment(ecs, elbv2, cluster, service):
                     d['pendingCount']
                 )
                 idx += s['deployments'].index(d)
-                out[index()] = '\t\t{:<31} {}  desired: {} running: {} pending: {}'.format(
+                out[index()] = '{:<8} {}  desired: {} running: {} pending: {}'.format(
                     *d_info)
+
+                # Print Container Information
+                td = get_task_definition(ecs, d['taskDefinition'])
+                containers = td['containerDefinitions']
+                for c in containers:
+                    out[index()] = '{} - {}'.format(
+                        ' ' * 8,
+                        c['image'].split('/')[-1]
+                    )
 
             out[index()] = '\n'
 
+            # Print Load Balancer info
             for lb in s['loadBalancers']:
                 tgs_state = {}
                 if 'targetGroupArn' in lb:
@@ -92,3 +97,12 @@ def monitor_deployment(ecs, elbv2, cluster, service):
                 out[index()] = '{} {}'.format(createdAt, e['message'])
 
             time.sleep(2)
+
+
+def get_task_definition(ecs, td_name):
+    try:
+        res = ecs.describe_task_definition(taskDefinition=td_name)
+    except ClientError as e:
+        click.echo(e.response['Error']['Message'], err=True)
+        sys.exit(1)
+    return res['taskDefinition']
