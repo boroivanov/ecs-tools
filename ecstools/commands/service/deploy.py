@@ -75,7 +75,7 @@ def register_task_def_with_new_image(ecs, ecr, cluster, service, artifact):
     ###########################################################################
     # Force new deployment with the current active task definition if
     # the requested for docker image tag is the same.
-    # We need to recycle cotainers in case the tag was reassigned to different
+    # We need to recycle containers in case the tag was reassigned to different
     # docker image (think tag:latest).
     # We skip registering a new task definition revision as it's not needed.
     ###########################################################################
@@ -95,7 +95,7 @@ def register_task_def_with_new_image(ecs, ecr, cluster, service, artifact):
     new_td['containerDefinitions'][0]['image'] = ':'.join([ecr_repo, artifact])
     new_td_res = ecs.register_task_definition(**new_td)
     td_name = new_td_res['taskDefinition']['taskDefinitionArn'].split('/')[-1]
-    click.secho('Registerd new task definition: %s' % td_name, fg='green')
+    click.secho('Registered new task definition: %s' % td_name, fg='green')
 
     return td_name
 
