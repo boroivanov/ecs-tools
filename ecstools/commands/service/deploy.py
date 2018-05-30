@@ -39,7 +39,7 @@ def register_task_def_with_new_image(ecs, ecr, cluster, service, artifact):
     # Get ECR repo
     srv = desc_service(ecs, cluster, service)
     td_arn = srv['taskDefinition']
-    click.echo('Current task deinition for %s %s: %s' %
+    click.echo('Current task definition for %s %s: %s' %
                (cluster, service, td_arn.split('/')[-1]))
     td = desc_task_definition(ecs, td_arn)
     containers = td['containerDefinitions']
