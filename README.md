@@ -56,7 +56,7 @@ Once the cli triggers the deploy and gets to the auto-update screen we can cance
 ```bash
 # Example of deploying a new docker tag
 $ ecs service deploy cluster1 app1 tag-new-123
-Current task deinition for cluster1 app1: app1-task-def:123
+Current task definition for cluster1 app1: app1-task-def:123
 Found image: 123456789.dkr.ecr.us-east-1.amazonaws.com/app1:tag-new-123
 Registerd new task definition: app1-task-def:124
 Deploying app1-task-def:124 to cluster1 app1...
@@ -75,7 +75,7 @@ Target Group: app1-tg  app1 443  healthy: 1 draining: 1
 
 # Example of deploying the same docker tag. A new deployment is forced to recycle containers.
 $ ecs service deploy cluster1 app1 tag1
-Current task deinition for cluster1 app1: app1-task-def:123
+Current task definition for cluster1 app1: app1-task-def:123
 Found image: 123456789.dkr.ecr.us-east-1.amazonaws.com/app1:tag1
 app1:tag1 is already in the current task definition. Forcing a new deployment of app1-task-def:123
 Deploying app1-task-def:123 to cluster1 app1...
