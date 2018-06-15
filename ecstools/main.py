@@ -6,8 +6,8 @@ import string
 
 from botocore.exceptions import ProfileNotFound, NoRegionError
 
-from ecstools import __version__
 
+version = '0.1.3'
 
 plugin_folder = os.path.join(os.path.dirname(__file__), 'commands')
 
@@ -37,7 +37,7 @@ class MyCLI(click.MultiCommand):
 
 @click.group(cls=MyCLI)
 @click.pass_context
-@click.version_option(version=__version__, message=__version__)
+@click.version_option(version=version, message=version)
 @click.option('-p', '--profile', help='AWS profile')
 @click.option('-r', '--region', help='AWS region')
 def cli(ctx, region, profile):

@@ -1,24 +1,4 @@
-import codecs
-import os.path
-import re
-
 from setuptools import setup, find_packages
-
-
-here = os.path.abspath(os.path.dirname(__file__))
-
-
-def read(*parts):
-    return codecs.open(os.path.join(here, *parts), 'r').read()
-
-
-def find_version(*file_paths):
-    version_file = read(*file_paths)
-    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
-                              version_file, re.M)
-    if version_match:
-        return version_match.group(1)
-    raise RuntimeError('Unable to find version string.')
 
 
 requirements = [
@@ -29,7 +9,7 @@ requirements = [
 
 setup(
     name="ecstools",
-    version=find_version('ecstools', '__init__.py'),
+    version="0.1.3",
     url="https://github.com/boroivanov/ecs-tools",
 
     author='Borislav Ivanov',
@@ -51,7 +31,6 @@ setup(
     license="MIT license",
 
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
