@@ -85,7 +85,7 @@ def monitor_deployment(ecs, elbv2, cluster, service):
             time.sleep(2)
 
 
-def get_task_definition(ecs, td_name):
+def describe_task_definition(ecs, td_name):
     try:
         res = ecs.describe_task_definition(taskDefinition=td_name)
     except ClientError as e:

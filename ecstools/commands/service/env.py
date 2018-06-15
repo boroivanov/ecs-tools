@@ -38,7 +38,7 @@ def cli(ctx, cluster, service, pairs, delete):
     td_arn = srv['taskDefinition']
     click.secho('Current task definition for %s %s: %s' %
                 (cluster, service, td_arn.split('/')[-1]), fg='blue')
-    td = desc_task_definition(ecs, td_arn)
+    td = utils.describe_task_definition(ecs, td_arn)
     containers = td['containerDefinitions']
 
     if len(containers) > 1:
@@ -172,8 +172,3 @@ def container_selection(containers):
         sys.exit(1)
 
     return containers[(int(c) - 1)]
-
-
-def desc_task_definition(ecs, taskDefinition):
-    res = ecs.describe_task_definition(taskDefinition=taskDefinition)
-    return res['taskDefinition']

@@ -41,7 +41,7 @@ def register_task_def_with_new_image(ecs, ecr, cluster, service, artifact):
     td_arn = srv['taskDefinition']
     click.echo('Current task definition for %s %s: %s' %
                (cluster, service, td_arn.split('/')[-1]))
-    td = desc_task_definition(ecs, td_arn)
+    td = utils.describe_task_definition(ecs, td_arn)
     containers = td['containerDefinitions']
 
     try:
@@ -115,8 +115,3 @@ def deploy_task_definition(ecs, cluster, service, task_def, count):
 
     res = ecs.update_service(**params)
     return res
-
-
-def desc_task_definition(ecs, taskDefinition):
-    res = ecs.describe_task_definition(taskDefinition=taskDefinition)
-    return res['taskDefinition']

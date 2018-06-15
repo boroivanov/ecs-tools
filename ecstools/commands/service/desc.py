@@ -27,7 +27,7 @@ def cli(ctx, cluster, service):
     click.secho(('Desired: %s Running: %s Pending: %s' %
                  (counts)), fg='white')
 
-    td = get_task_definition(ecs, s['taskDefinition'])
+    td = utils.describe_task_definition(ecs, s['taskDefinition'])
     containers = td['containerDefinitions']
     for c in containers:
         click.echo('Container:        %s' % c['image'].split('/')[-1])
@@ -62,12 +62,3 @@ def cli(ctx, cluster, service):
     click.echo('Security Groups:  %s' % " ".join(nc['securityGroups']))
     click.echo('Public IP:        %s' % nc['assignPublicIp'])
     click.echo('Created:          %s' % s['createdAt'].replace(microsecond=0))
-
-
-def get_task_definition(ecs, td_name):
-    try:
-        res = ecs.describe_task_definition(taskDefinition=td_name)
-    except ClientError as e:
-        click.echo(e.response['Error']['Message'], err=True)
-        sys.exit(1)
-    return res['taskDefinition']

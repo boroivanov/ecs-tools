@@ -40,7 +40,7 @@ def cli(ctx, cluster, all_stats, arn):
     for srv in services:
         if all_stats:
             s = utils.describe_services(ecs, cluster, srv)
-            td = get_task_definition(ecs, s['taskDefinition'])
+            td = utils.describe_services(ecs, s['taskDefinition'])
             containers = td['containerDefinitions']
 
             click.echo('{srv_name:32} {task_def:48} {running:3}/{desired:<3} {cpu} {memory} {image}'.format(
@@ -56,12 +56,3 @@ def cli(ctx, cluster, all_stats, arn):
             )
         else:
             click.echo(srv)
-
-
-def get_task_definition(ecs, td_name):
-    try:
-        res = ecs.describe_task_definition(taskDefinition=td_name)
-    except ClientError as e:
-        click.echo(e.response['Error']['Message'], err=True)
-        sys.exit(1)
-    return res['taskDefinition']
