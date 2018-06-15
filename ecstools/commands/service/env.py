@@ -34,7 +34,7 @@ def cli(ctx, cluster, service, pairs, delete):
     ecs = ctx.obj['ecs']
     elbv2 = ctx.obj['elbv2']
 
-    srv = desc_service(ecs, cluster, service)
+    srv = utils.describe_services(ecs, cluster, service)
     td_arn = srv['taskDefinition']
     click.secho('Current task definition for %s %s: %s' %
                 (cluster, service, td_arn.split('/')[-1]), fg='blue')
@@ -172,26 +172,6 @@ def container_selection(containers):
         sys.exit(1)
 
     return containers[(int(c) - 1)]
-
-
-def desc_service(ecs, cluster, service):
-    try:
-        res = ecs.describe_services(
-            cluster=cluster,
-            services=[service]
-        )
-        srv = res['services'][0]
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'ClusterNotFoundException':
-            click.echo('Cluster not found.', err=True)
-        else:
-            click.echo(e, err=True)
-        sys.exit(1)
-    except:
-        click.echo('Service not found.', err=True)
-        sys.exit(1)
-
-    return srv
 
 
 def desc_task_definition(ecs, taskDefinition):

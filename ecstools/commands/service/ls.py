@@ -3,6 +3,8 @@ import sys
 
 from botocore.exceptions import ClientError
 
+import ecstools.lib.utils as utils
+
 
 @click.command()
 @click.argument('cluster')
@@ -37,7 +39,7 @@ def cli(ctx, cluster, all_stats, arn):
 
     for srv in services:
         if all_stats:
-            s = describe_service(ecs, cluster, srv)
+            s = utils.describe_services(ecs, cluster, srv)
             td = get_task_definition(ecs, s['taskDefinition'])
             containers = td['containerDefinitions']
 
@@ -54,25 +56,6 @@ def cli(ctx, cluster, all_stats, arn):
             )
         else:
             click.echo(srv)
-
-
-def describe_service(ecs, cluster, service):
-    try:
-        response = ecs.describe_services(
-            cluster=cluster,
-            services=[service]
-        )
-        service = response['services'][0]
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'ClusterNotFoundException':
-            click.echo('Cluster not found.', err=True)
-        else:
-            click.echo(e, err=True)
-        sys.exit(1)
-    except:
-        click.echo('Service not found.', err=True)
-        sys.exit(1)
-    return service
 
 
 def get_task_definition(ecs, td_name):

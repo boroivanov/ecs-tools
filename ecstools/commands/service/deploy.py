@@ -37,7 +37,7 @@ def cli(ctx, cluster, service, artifact, task_definition, count):
 
 def register_task_def_with_new_image(ecs, ecr, cluster, service, artifact):
     # Get ECR repo
-    srv = desc_service(ecs, cluster, service)
+    srv = utils.describe_services(ecs, cluster, service)
     td_arn = srv['taskDefinition']
     click.echo('Current task definition for %s %s: %s' %
                (cluster, service, td_arn.split('/')[-1]))
@@ -115,26 +115,6 @@ def deploy_task_definition(ecs, cluster, service, task_def, count):
 
     res = ecs.update_service(**params)
     return res
-
-
-def desc_service(ecs, cluster, service):
-    try:
-        res = ecs.describe_services(
-            cluster=cluster,
-            services=[service]
-        )
-        srv = res['services'][0]
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'ClusterNotFoundException':
-            click.echo('Cluster not found.', err=True)
-        else:
-            click.echo(e, err=True)
-        sys.exit(1)
-    except:
-        click.echo('Service not found.', err=True)
-        sys.exit(1)
-
-    return srv
 
 
 def desc_task_definition(ecs, taskDefinition):

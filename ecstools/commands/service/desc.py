@@ -3,6 +3,8 @@ import sys
 
 from botocore.exceptions import ClientError
 
+import ecstools.lib.utils as utils
+
 
 @click.command()
 @click.argument('cluster')
@@ -13,21 +15,7 @@ def cli(ctx, cluster, service):
     ecs = ctx.obj['ecs']
     elbv2 = ctx.obj['elbv2']
 
-    try:
-        response = ecs.describe_services(
-            cluster=cluster,
-            services=[service]
-        )
-        s = response['services'][0]
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'ClusterNotFoundException':
-            click.echo('Cluster not found.', err=True)
-        else:
-            click.echo(e, err=True)
-        sys.exit(1)
-    except:
-        click.echo('Service not found.', err=True)
-        sys.exit(1)
+    s = utils.describe_services(ecs, cluster, service)
 
     # Print Service Info
     cls_name = s['clusterArn'].split('/')[-1]
