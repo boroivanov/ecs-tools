@@ -45,7 +45,7 @@ def monitor_deployment(ecs, elbv2, cluster, service):
                     *d_info)
 
                 # Print Container Information
-                td = get_task_definition(ecs, d['taskDefinition'])
+                td = describe_task_definition(ecs, d['taskDefinition'])
                 containers = td['containerDefinitions']
                 for c in containers:
                     out[index()] = '{} - {}'.format(
@@ -109,4 +109,12 @@ def describe_services(ecs, cluster, service):
         sys.exit(1)
     except:
         click.echo('Service not found.', err=True)
+        sys.exit(1)
+
+
+def update_service(ecs, **params):
+    try:
+        ecs.update_service(**params)
+    except ClientError as e:
+        click.echo(e.response['Error']['Message'], err=True)
         sys.exit(1)

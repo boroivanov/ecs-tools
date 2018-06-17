@@ -148,7 +148,7 @@ def deploy_task_definition(ecs, cluster, service, task_def):
         'taskDefinition': task_def,
         'forceNewDeployment': True
     }
-    res = ecs.update_service(**params)
+    res = utils.update_service(ecs, **params)
     return res
 
 

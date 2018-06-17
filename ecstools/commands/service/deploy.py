@@ -113,5 +113,5 @@ def deploy_task_definition(ecs, cluster, service, task_def, count):
     if count:
         params['desiredCount'] = count
 
-    res = ecs.update_service(**params)
+    res = utils.update_service(ecs, **params)
     return res
