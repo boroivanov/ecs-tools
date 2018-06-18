@@ -11,11 +11,19 @@ version = '0.1.3'
 commands_dir = os.path.join(os.path.dirname(__file__), 'commands')
 
 
-class Commands(MyCLI):
-    plugin_folder = commands_dir
+class ClusterCommand(MyCLI):
+    plugin_folder = os.path.join(commands_dir, 'cluster')
 
 
-@click.group(cls=Commands)
+class ServiceCommand(MyCLI):
+    plugin_folder = os.path.join(commands_dir, 'service')
+
+
+class TaskDefinitionCommand(MyCLI):
+    plugin_folder = os.path.join(commands_dir, 'task-definition')
+
+
+@click.group()
 @click.pass_context
 @click.version_option(version=version, message=version)
 @click.option('-p', '--profile', help='AWS profile')
@@ -43,6 +51,27 @@ def cli(ctx, region, profile):
         'ecr': ecr,
         'elbv2': elbv2
     }
+    pass
+
+
+@cli.group(cls=ClusterCommand)
+@click.pass_context
+def cluster(ctx):
+    """Manage clusters"""
+    pass
+
+
+@cli.group(cls=ServiceCommand)
+@click.pass_context
+def service(ctx):
+    """Manage and deploy services"""
+    pass
+
+
+@cli.group(cls=TaskDefinitionCommand, name='task-definition')
+@click.pass_context
+def task_definition(ctx):
+    """Manage task definitions"""
     pass
 
 
