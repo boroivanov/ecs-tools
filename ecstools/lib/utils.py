@@ -57,24 +57,10 @@ def monitor_deployment(ecs, elbv2, cluster, service):
 
             # Print Load Balancer info
             for lb in s['loadBalancers']:
-                tgs_state = {}
                 if 'targetGroupArn' in lb:
-                    targets = elbv2.describe_target_health(
-                        TargetGroupArn=lb['targetGroupArn'])
-
-                    for t in targets['TargetHealthDescriptions']:
-                        state = t['TargetHealth']['State']
-                        if state in tgs_state:
-                            tgs_state[state] += 1
-                        else:
-                            tgs_state[state] = 1
-                    group = lb['targetGroupArn'].split('/')[-2]
-                    container = lb['containerName']
-                    port = lb['containerPort']
-                    states = ' '.join(['{}: {}'.format(k, v)
-                                       for k, v in tgs_state.items()])
-                    out[index()] = 'Target Group: {}  {} {}  {}'.format(
-                        group, container, port, states)
+                    tg_info = describe_target_group_info(elbv2, lb)
+                    out[index()] = 'Target Group: {group}  {container} {port}  {states}'.format(
+                        **tg_info)
             out[index()] = '\n'
 
             for e in s['events'][:2]:
@@ -83,6 +69,31 @@ def monitor_deployment(ecs, elbv2, cluster, service):
                 out[index()] = '{} {}'.format(createdAt, e['message'])
 
             time.sleep(2)
+
+
+def describe_target_group_info(elbv2, lb):
+    targets = elbv2.describe_target_health(TargetGroupArn=lb['targetGroupArn'])
+
+    states = target_health_states(targets['TargetHealthDescriptions'])
+
+    summary = {
+        'group': lb['targetGroupArn'].split('/')[-2],
+        'container': lb['containerName'],
+        'port': lb['containerPort'],
+        'states': ' '.join(['{}: {}'.format(k, v) for k, v in states.items()])
+    }
+    return summary
+
+
+def target_health_states(target_health_descriptions):
+    states = {}
+    for t in target_health_descriptions:
+        state = t['TargetHealth']['State']
+        if state in states:
+            states[state] += 1
+        else:
+            states[state] = 1
+    return states
 
 
 def describe_task_definition(ecs, td_name):

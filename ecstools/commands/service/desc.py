@@ -33,32 +33,13 @@ def cli(ctx, cluster, service):
         click.echo('Container:        %s' % c['image'].split('/')[-1])
 
     for lb in s['loadBalancers']:
-        tgs_state = {}
-        if 'loadBalancerName' in lb:
-            click.echo('LoadBalancer: %s' % lb['loadBalancerName'])
         if 'targetGroupArn' in lb:
-            click.echo('Target Group:     %s' %
-                       lb['targetGroupArn'].split('/')[-2], nl=False)
-            targets = elbv2.describe_target_health(
-                TargetGroupArn=lb['targetGroupArn'])
-
-            for t in targets['TargetHealthDescriptions']:
-                state = t['TargetHealth']['State']
-                if state in tgs_state:
-                    tgs_state[state] += 1
-                else:
-                    tgs_state[state] = 1
-        click.echo('  %s' % lb['containerName'], nl=False)
-        click.echo(' %s' % lb['containerPort'], nl=False)
-        if tgs_state:
-            states = ' '.join(['{}: {}'.format(k, v)
-                               for k, v in tgs_state.items()])
-            click.echo('  %s' % states)
-        else:
-            click.echo()
+            tg_info = utils.describe_target_group_info(elbv2, lb)
+            click.echo(
+                'Target Group:     {group} {container} {port} {states}'.format(**tg_info))
 
     nc = s['networkConfiguration']['awsvpcConfiguration']
-    click.echo('Subnets:          %s' % " ".join(nc['subnets']))
-    click.echo('Security Groups:  %s' % " ".join(nc['securityGroups']))
+    click.echo('Subnets:          %s' % ' '.join(nc['subnets']))
+    click.echo('Security Groups:  %s' % ' '.join(nc['securityGroups']))
     click.echo('Public IP:        %s' % nc['assignPublicIp'])
     click.echo('Created:          %s' % s['createdAt'].replace(microsecond=0))
