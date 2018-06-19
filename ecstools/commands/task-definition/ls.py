@@ -20,10 +20,10 @@ def cli(ctx, name, arn, num, no_details, repo):
         $ ecs def
 
         |\b
-        $ ecs def <taks-definition-family>
+        $ ecs def <task-definition-family>
 
         |\b
-        $ ecs def <taks-definition-family>:<revision>
+        $ ecs def <task-definition-family>:<revision>
     """
     ecs = ctx.obj['ecs']
 

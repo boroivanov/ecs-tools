@@ -89,7 +89,7 @@ def register_task_definition_with_envs(ecs, current_task_definition, container, 
             new_td_res = ecs.register_task_definition(**new_td)
             td_name = new_td_res['taskDefinition']['taskDefinitionArn'].split(
                 '/')[-1]
-            click.secho('Registerd new task definition: %s' %
+            click.secho('Registered new task definition: %s' %
                         td_name, fg='green')
 
     return td_name
