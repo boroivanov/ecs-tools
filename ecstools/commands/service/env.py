@@ -40,81 +40,37 @@ def cli(ctx, cluster, service, pairs, delete):
                 (cluster, service, td_arn.split('/')[-1]), fg='blue')
     td = utils.describe_task_definition(ecs, td_arn)
     containers = td['containerDefinitions']
+    container = container_selection(containers)
 
-    if len(containers) > 1:
-        container = container_selection(containers)
-    else:
-        container = containers[0]
-
-    click.echo()
-
-    click.secho(('==> Container: %s' % container['name']), fg='white')
+    click.secho(('\n==> Container: %s' % container['name']), fg='white')
 
     # Just print env vars if none were passed
     if len(pairs) == 0:
-        for e in container['environment']:
-            click.echo('%s=%s' % (e['name'], e['value']))
-        sys.exit(0)
+        print_environment_variables(container['environment'])
 
     envs = copy.deepcopy(container['environment'])
 
     # Delete variable if '-d' is passed
     if delete:
-        for pair in pairs:
-            for e in envs:
-                if pair == e['name']:
-                    click.echo('- %s=%s' % (e['name'], e['value']))
-                    envs.remove(e)
+        new_envs = delete_environment_variables(pairs, envs)
     else:
-        # Update env var if it exist. Otherwise append it.
-        validate_pairs(pairs)
-        for pair in pairs:
-            k, v = pair.split('=', 1)
-            matched = False
-            # Check if env var already exists
-            for e in envs:
-                if k == e['name']:
-                    if v != e['value']:
-                        # Env var value is different
-                        click.echo('- %s=%s' % (e['name'], e['value']))
-                        click.echo('+ ', nl=False)
-                        e['value'] = v
-                    click.echo('%s=%s' % (k, v))
-                    matched = True
-                    break
-            if not matched:
-                click.echo('+ %s=%s' % (k, v))
-                envs.append({'name': k, 'value': v})
+        new_envs = set_environment_variables(pairs, envs)
 
-    # Compare new and old environment variables
-    if envs == container['environment']:
-        # Nothing was updated. No need to create task definition.
+    if new_envs == container['environment']:
         click.echo('\nNo updates')
         sys.exit(0)
 
     click.echo()
-
-    try:
-        c = input('Do you want to create a new task definition revision? ')
-        if c not in ['yes', 'Yes', 'y', 'Y']:
-            raise ValueError()
-    except:
-        sys.exit(0)
+    confirm_input('Do you want to create a new task definition revision? ')
 
     # Register new task definition with the new environment variables
     try:
         td_name = register_task_definition_with_envs(
-            ecs, td, container['name'], envs)
+            ecs, td, container['name'], new_envs)
     except:
         sys.exit(0)
 
-    # # Ask to deploy the changes
-    try:
-        to_deploy = input('Do you want to deploy your changes? ')
-        if to_deploy not in ['yes', 'Yes', 'y', 'Y']:
-            raise ValueError()
-    except:
-        sys.exit(0)
+    confirm_input('Do you want to deploy your changes? ')
 
     # Deploy the new task definition
     deploy_task_definition(ecs, cluster, service, td_name)
@@ -152,6 +108,15 @@ def deploy_task_definition(ecs, cluster, service, task_def):
     return res
 
 
+def confirm_input(text):
+    try:
+        c = input(text)
+        if c not in ['yes', 'Yes', 'y', 'Y']:
+            raise ValueError()
+    except:
+        sys.exit(0)
+
+
 def validate_pairs(pairs):
     for pair in pairs:
         if len(pair.split('=', 1)) != 2:
@@ -160,15 +125,57 @@ def validate_pairs(pairs):
 
 
 def container_selection(containers):
-    for c in containers:
-        click.echo('%s) %s' % (containers.index(c) + 1, c['name']))
+    if len(containers) > 1:
+        for c in containers:
+            click.echo('%s) %s' % (containers.index(c) + 1, c['name']))
 
-    try:
-        c = int(input('#? '))
-        if int(c) not in range(len(containers) + 1):
-            raise ValueError()
-    except:
-        click.echo('Invalid input')
-        sys.exit(1)
+        try:
+            c = int(input('#? '))
+            if int(c) not in range(len(containers) + 1):
+                raise ValueError()
+        except:
+            click.echo('Invalid input')
+            sys.exit(1)
 
-    return containers[(int(c) - 1)]
+        return containers[(int(c) - 1)]
+    return containers[0]
+
+
+def delete_environment_variables(pairs, envs):
+    for pair in pairs:
+        for e in envs:
+            if pair == e['name']:
+                click.echo('- %s=%s' % (e['name'], e['value']))
+                envs.remove(e)
+    return envs
+
+
+def set_environment_variables(pairs, envs):
+    # Update env var if it exist. Otherwise append it.
+    validate_pairs(pairs)
+
+    for pair in pairs:
+        k, v = pair.split('=', 1)
+        matched = False
+        # Check if env var already exists
+        for e in envs:
+            if k == e['name']:
+                if v != e['value']:
+                    # Env var value is different
+                    click.echo('- %s=%s' % (e['name'], e['value']))
+                    click.echo('+ ', nl=False)
+                    e['value'] = v
+                click.echo('%s=%s' % (k, v))
+                matched = True
+                break
+        if not matched:
+            click.echo('+ %s=%s' % (k, v))
+            envs.append({'name': k, 'value': v})
+
+    return envs
+
+
+def print_environment_variables(envs):
+    for e in envs:
+        click.echo('%s=%s' % (e['name'], e['value']))
+    sys.exit(0)
