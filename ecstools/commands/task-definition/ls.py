@@ -27,46 +27,54 @@ def cli(ctx, name, arn, num, no_details, repo):
     """
     ecs = ctx.obj['ecs']
 
-    # Print only task definition families by default
     if not name:
-        res = ecs.list_task_definition_families()
-        dfs = res['families']
-        for d in dfs:
-            click.echo(d)
-        return
-    # Loop through revisions and optionally print details
+        print_task_definition_families(ecs)
     else:
-        # Taks definition revision was specified
-        if ':' in name:
-            dfs = [name]
-        else:
-            res = ecs.list_task_definitions(
-                familyPrefix=name,
-                sort='DESC',
-                maxResults=num
-            )
-            dfs = res['taskDefinitionArns']
+        print_task_definition_revisions(ecs, name, arn, num, no_details, repo)
 
-        if not arn:
-            dfs = map(lambda x: x.split('/')[-1], dfs)
 
-        for d in dfs:
-            if no_details:
-                click.echo(d)
-                continue
+def print_task_definition_families(ecs):
+    res = ecs.list_task_definition_families()
+    for family in res['families']:
+        click.echo(family)
 
-            td = utils.describe_task_definition(ecs, d)
-            containers = td['containerDefinitions']
-            click.secho('%s cpu: %s memory: %s' %
-                        (d, td.get('cpu', '-'), td.get('memory', '-')), fg='blue')
 
-            for c in containers:
-                image = (repo and c['image'] or c['image'].split('/')[-1])
-                click.echo('  - %s %s %s %s' %
-                           (
-                               c['name'],
-                               c.get('cpu', '-'),
-                               c.get('memory', '-'),
-                               image
-                           )
-                           )
+def print_task_definition_revisions(ecs, name, arn, num, no_details, repo):
+    # Task definition revision was specified
+    if ':' in name:
+        definitions = [name]
+    else:
+        res = ecs.list_task_definitions(
+            familyPrefix=name,
+            sort='DESC',
+            maxResults=num
+        )
+        definitions = res['taskDefinitionArns']
+
+    if not arn:
+        definitions = map(lambda x: x.split('/')[-1], definitions)
+
+    for d in definitions:
+        if no_details:
+            click.echo(d)
+            continue
+        print_task_definition_info(ecs, repo, d)
+
+
+def print_task_definition_info(ecs, repo, td_name):
+    td = utils.describe_task_definition(ecs, td_name)
+    click.secho('%s cpu: %s memory: %s' % (td_name,
+                                           td.get('cpu', '-'),
+                                           td.get('memory', '-')
+                                           ), fg='blue')
+    print_containers_info(repo, td['containerDefinitions'])
+
+
+def print_containers_info(repo, containers):
+    for c in containers:
+        # Include the repo URI if the repo flag is set
+        image = (repo and c['image'] or c['image'].split('/')[-1])
+        click.echo('  - %s %s %s %s' % (c['name'],
+                                        c.get('cpu', '-'),
+                                        c.get('memory', '-'),
+                                        image))
