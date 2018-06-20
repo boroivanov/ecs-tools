@@ -54,20 +54,20 @@ def print_task_definition_revisions(ecs, name, arn, num, no_details, repo):
     if not arn:
         definitions = map(lambda x: x.split('/')[-1], definitions)
 
-    for d in definitions:
+    print_task_definition_info(ecs, repo, definitions, no_details)
+
+
+def print_task_definition_info(ecs, repo, definitions, no_details):
+    for td_name in definitions:
         if no_details:
-            click.echo(d)
+            click.echo(td_name)
             continue
-        print_task_definition_info(ecs, repo, d)
-
-
-def print_task_definition_info(ecs, repo, td_name):
-    td = utils.describe_task_definition(ecs, td_name)
-    click.secho('%s cpu: %s memory: %s' % (td_name,
-                                           td.get('cpu', '-'),
-                                           td.get('memory', '-')
-                                           ), fg='blue')
-    print_containers_info(repo, td['containerDefinitions'])
+        td = utils.describe_task_definition(ecs, td_name)
+        click.secho('%s cpu: %s memory: %s' % (td_name,
+                                               td.get('cpu', '-'),
+                                               td.get('memory', '-')
+                                               ), fg='blue')
+        print_containers_info(repo, td['containerDefinitions'])
 
 
 def print_containers_info(repo, containers):
