@@ -107,8 +107,7 @@ def deploy_task_definition(ecs, cluster, service, task_def):
         'taskDefinition': task_def,
         'forceNewDeployment': True
     }
-    res = utils.update_service(ecs, **params)
-    return res
+    utils.update_service(ecs, **params)
 
 
 def confirm_input(text):

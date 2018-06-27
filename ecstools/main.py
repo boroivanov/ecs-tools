@@ -51,7 +51,6 @@ def cli(ctx, region, profile):
         'ecr': ecr,
         'elbv2': elbv2
     }
-    pass
 
 
 @cli.group(cls=ClusterCommand)
