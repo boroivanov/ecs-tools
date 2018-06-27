@@ -71,10 +71,9 @@ def cli(ctx, cluster, service, pairs, delete):
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException':
             click.echo(e, err=True)
-            sys.exit(1)
         else:
             click.echo(e, err=True)
-            sys.exit(1)
+        sys.exit(1)
 
     confirm_input('Do you want to deploy your changes? ')
 
