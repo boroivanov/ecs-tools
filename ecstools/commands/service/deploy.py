@@ -65,7 +65,7 @@ def register_task_def_with_new_image(ecs, ecr, cluster, service, artifact):
                      td_arn.split('/')[-1]), fg='white')
         return td_arn
 
-    new_td = copy_task_definition(td)
+    new_td = utils.copy_task_definition(td)
     new_td_name = register_task_def(ecs, new_td, ecr_repo, artifact)
     return new_td_name
 
@@ -125,17 +125,3 @@ def get_repo_and_tag_names(containers):
 
 def image_tag_currently_deployed(ecr_image_tag, artifact):
     return ecr_image_tag == artifact
-
-
-def copy_task_definition(td):
-    aws_reserved_params = ['status',
-                           'compatibilities',
-                           'taskDefinitionArn',
-                           'revision',
-                           'requiresAttributes'
-                           ]
-    new_td = td.copy()
-
-    for k in aws_reserved_params:
-        del new_td[k]
-    return new_td

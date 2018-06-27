@@ -41,7 +41,8 @@ def monitor_deployment(ecs, elbv2, cluster, service):
                     d['pendingCount']
                 )
                 idx += s['deployments'].index(d)
-                out[index()] = '{:<8} {}  desired: {} running: {} pending: {}'.format(
+                out[index()] = '{:<8} {}  desired: {} running: {} ' \
+                    'pending: {}'.format(
                     *d_info)
 
                 # Print Container Information
@@ -59,7 +60,8 @@ def monitor_deployment(ecs, elbv2, cluster, service):
             for lb in s['loadBalancers']:
                 if 'targetGroupArn' in lb:
                     tg_info = describe_target_group_info(elbv2, lb)
-                    out[index()] = 'Target Group: {group}  {container} {port}  {states}'.format(
+                    out[index()] = 'Target Group: {group}  ' \
+                        '{container} {port} {states}'.format(
                         **tg_info)
             out[index()] = '\n'
 
@@ -118,7 +120,7 @@ def describe_services(ecs, cluster, service):
         else:
             click.echo(e, err=True)
         sys.exit(1)
-    except:
+    except IndexError:
         click.echo('Service not found.', err=True)
         sys.exit(1)
 
@@ -129,3 +131,17 @@ def update_service(ecs, **params):
     except ClientError as e:
         click.echo(e.response['Error']['Message'], err=True)
         sys.exit(1)
+
+
+def copy_task_definition(td):
+    aws_reserved_params = ['status',
+                           'compatibilities',
+                           'taskDefinitionArn',
+                           'revision',
+                           'requiresAttributes'
+                           ]
+    new_td = td.copy()
+
+    for k in aws_reserved_params:
+        del new_td[k]
+    return new_td

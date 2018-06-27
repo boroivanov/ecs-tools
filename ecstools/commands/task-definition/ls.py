@@ -1,7 +1,4 @@
 import click
-import sys
-
-from botocore.exceptions import ClientError
 
 import ecstools.lib.utils as utils
 
@@ -11,7 +8,8 @@ import ecstools.lib.utils as utils
 @click.option('-n', '--num', type=int, default=3, help='Number of results')
 @click.option('-A', '--arn', is_flag=True, help='Show ARN')
 @click.option('-R', '--repo', is_flag=True, help='Show repo URI for images')
-@click.option('-D', '--no-details', is_flag=True, default=False, help='Disable revision details')
+@click.option('-D', '--no-details', is_flag=True, default=False,
+              help='Disable revision details')
 @click.pass_context
 def cli(ctx, name, arn, num, no_details, repo):
     """List families / revisions

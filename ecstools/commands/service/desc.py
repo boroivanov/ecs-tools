@@ -1,7 +1,4 @@
 import click
-import sys
-
-from botocore.exceptions import ClientError
 
 import ecstools.lib.utils as utils
 
@@ -36,7 +33,8 @@ def cli(ctx, cluster, service):
         if 'targetGroupArn' in lb:
             tg_info = utils.describe_target_group_info(elbv2, lb)
             click.echo(
-                'Target Group:     {group} {container} {port} {states}'.format(**tg_info))
+                'Target Group:     ' +
+                '{group} {container} {port} {states}'.format(**tg_info))
 
     nc = s['networkConfiguration']['awsvpcConfiguration']
     click.echo('Subnets:          %s' % ' '.join(nc['subnets']))

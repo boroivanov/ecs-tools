@@ -1,7 +1,4 @@
 import click
-import sys
-
-from botocore.exceptions import ClientError
 
 import ecstools.lib.utils as utils
 
