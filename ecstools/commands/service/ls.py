@@ -55,14 +55,15 @@ def list_services(ecs, cluster):
 
 
 def print_service_info(srv, td, containers):
-    click.echo('{srv_name:32} {task_def:48} {running:3}/{desired:<3} {cpu} {memory} {image}'.format(
-        srv_name=srv['serviceName'],
-        task_def=srv['taskDefinition'].split('/')[-1],
-        running=srv['runningCount'],
-        desired=srv['desiredCount'],
-        cpu=td['cpu'],
-        memory=td['memory'],
-        image=' '.join('{}'.format(
-            c['image'].split('/')[1]) for c in containers)
-    )
-    )
+    click.echo('{srv_name:32} {task_def:48} {running:3}/{desired:<3} ' +
+               '{cpu} {memory} {image}'.format(
+                   srv_name=srv['serviceName'],
+                   task_def=srv['taskDefinition'].split('/')[-1],
+                   running=srv['runningCount'],
+                   desired=srv['desiredCount'],
+                   cpu=td['cpu'],
+                   memory=td['memory'],
+                   image=' '.join('{}'.format(
+                       c['image'].split('/')[1]) for c in containers)
+               )
+               )

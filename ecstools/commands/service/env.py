@@ -19,7 +19,8 @@ except NameError:
 @click.argument('service', nargs=1)
 @click.argument('pairs', nargs=-1)
 # @click.option('-c', '--container', help='Optional container name')
-@click.option('-d', '--delete', is_flag=True, help='Delete environment variable')
+@click.option('-d', '--delete', is_flag=True,
+              help='Delete environment variable')
 @click.pass_context
 def cli(ctx, cluster, service, pairs, delete):
     """Manage environment variables
@@ -67,8 +68,12 @@ def cli(ctx, cluster, service, pairs, delete):
     try:
         td_name = register_task_definition_with_envs(
             ecs, td, container['name'], new_envs)
-    except:
-        sys.exit(0)
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException':
+            click.echo(e, err=True)
+        else:
+            click.echo(e, err=True)
+        sys.exit(1)
 
     confirm_input('Do you want to deploy your changes? ')
 
@@ -78,11 +83,9 @@ def cli(ctx, cluster, service, pairs, delete):
     utils.monitor_deployment(ecs, elbv2, cluster, service)
 
 
-def register_task_definition_with_envs(ecs, current_task_definition, container, envs):
+def register_task_definition_with_envs(ecs, td, container, envs):
     """ Register new task definition with the new environment variables """
-    new_td = current_task_definition.copy()
-    for k in ['status', 'compatibilities', 'taskDefinitionArn', 'revision', 'requiresAttributes']:
-        del new_td[k]
+    new_td = utils.copy_task_definition(td)
     for c in new_td['containerDefinitions']:
         if c['name'] == container:
             c['environment'] = envs
@@ -113,7 +116,7 @@ def confirm_input(text):
         c = input(text)
         if c not in ['yes', 'Yes', 'y', 'Y']:
             raise ValueError()
-    except:
+    except ValueError:
         sys.exit(0)
 
 
@@ -131,9 +134,9 @@ def container_selection(containers):
 
         try:
             c = int(input('#? '))
-            if int(c) not in range(len(containers) + 1):
+            if int(c) not in range(1, len(containers) + 1):
                 raise ValueError()
-        except:
+        except ValueError:
             click.echo('Invalid input')
             sys.exit(1)
 
