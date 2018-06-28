@@ -24,53 +24,59 @@ def monitor_deployment(ecs, elbv2, cluster, service):
             global idx
             idx = 0
 
-            # Print Service Info
             cls_name = s['clusterArn'].split('/')[-1]
             srv_name = s['serviceName']
             out[idx] = '{} {} deployments:'.format(cls_name, srv_name)
-
             out[index()] = '\n'
 
-            # # Print Deployments Info
-            for d in s['deployments']:
-                d_info = (
-                    d['status'],
-                    d['taskDefinition'].split('/')[-1],
-                    d['desiredCount'],
-                    d['runningCount'],
-                    d['pendingCount']
-                )
-                idx += s['deployments'].index(d)
-                out[index()] = '{:<8} {}  desired: {} running: {} ' \
-                    'pending: {}'.format(
-                    *d_info)
-
-                # Print Container Information
-                td = describe_task_definition(ecs, d['taskDefinition'])
-                containers = td['containerDefinitions']
-                for c in containers:
-                    out[index()] = '{} - {}'.format(
-                        ' ' * 8,
-                        c['image'].split('/')[-1]
-                    )
-
+            print_deployment_info(idx, out, ecs, s['deployments'])
             out[index()] = '\n'
-
-            # Print Load Balancer info
-            for lb in s['loadBalancers']:
-                if 'targetGroupArn' in lb:
-                    tg_info = describe_target_group_info(elbv2, lb)
-                    out[index()] = 'Target Group: {group}  ' \
-                        '{container} {port} {states}'.format(
-                        **tg_info)
-            out[index()] = '\n'
-
-            for e in s['events'][:2]:
-                idx += s['events'].index(e)
-                createdAt = e['createdAt'].replace(microsecond=0)
-                out[index()] = '{} {}'.format(createdAt, e['message'])
+            print_loadbalancer_into(idx, out, elbv2, s['loadBalancers'])
+            print_ecs_events(idx, out, s['events'][:2])
 
             time.sleep(2)
+
+
+def print_deployment_info(idx, out, ecs, deployments):
+    for d in deployments:
+        d_info = (
+            d['status'],
+            d['taskDefinition'].split('/')[-1],
+            d['desiredCount'],
+            d['runningCount'],
+            d['pendingCount']
+        )
+        idx += deployments.index(d)
+        out[index()] = '{:<8} {}  desired: {} running: {} ' \
+            'pending: {}'.format(
+            *d_info)
+
+        # Print Container Information
+        td = describe_task_definition(ecs, d['taskDefinition'])
+        containers = td['containerDefinitions']
+        for c in containers:
+            out[index()] = '{} - {}'.format(
+                ' ' * 8,
+                c['image'].split('/')[-1]
+            )
+    out[index()] = '\n'
+
+
+def print_loadbalancer_into(idx, out, elbv2, loadBalancers):
+    for lb in loadBalancers:
+        if 'targetGroupArn' in lb:
+            tg_info = describe_target_group_info(elbv2, lb)
+            out[index()] = 'Target Group: {group}  ' \
+                '{container} {port} {states}'.format(
+                **tg_info)
+    out[index()] = '\n'
+
+
+def print_ecs_events(idx, out, events):
+    for e in events:
+        idx += events.index(e)
+        createdAt = e['createdAt'].replace(microsecond=0)
+        out[index()] = '{} {}'.format(createdAt, e['message'])
 
 
 def describe_target_group_info(elbv2, lb):
