@@ -1,17 +1,11 @@
 import click
 import sys
 import copy
+import six
 
 from botocore.exceptions import ClientError
 
 import ecstools.lib.utils as utils
-
-
-# Support raw input() for both py2 and py3
-try:
-    input = raw_input
-except NameError:
-    pass
 
 
 @click.command(short_help='Manage environment variables')
@@ -112,7 +106,7 @@ def deploy_task_definition(ecs, cluster, service, task_def):
 
 def confirm_input(text):
     try:
-        c = input(text)
+        c = six.moves.input(text)
         if c not in ['yes', 'Yes', 'y', 'Y']:
             raise ValueError()
     except ValueError:
@@ -132,7 +126,7 @@ def container_selection(containers):
             click.echo('%s) %s' % (containers.index(c) + 1, c['name']))
 
         try:
-            c = int(input('#? '))
+            c = int(six.moves.input('#? '))
             if int(c) not in range(1, len(containers) + 1):
                 raise ValueError()
         except ValueError:
