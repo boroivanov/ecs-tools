@@ -11,19 +11,22 @@ class Service(object):
     def __init__(self, ecs, ecr, cluster, service):
         self.ecs = ecs
         self.ecr = ecr
-        self.cluster = cluster
-        self.service_name = service
-        self.service = self._describe_service()
-        self.td = TaskDefinition(self.ecs, self.service['taskDefinition'])
+        self._cluster = cluster
+        self._service_name = service
+        self._service = self._describe_service()
+        self._td = TaskDefinition(self.ecs, self._service['taskDefinition'])
+
+    def service(self):
+        return self._service
 
     def name(self):
-        return self.service_name
+        return self._service_name
 
     def cluster(self):
-        return self.cluster
+        return self._cluster
 
     def task_definition(self):
-        return self.td
+        return self._td
 
     def images(self):
         return self.task_definition().images()
@@ -43,13 +46,13 @@ class Service(object):
     def deploy_task_definition(self, taskDefinition, count):
         click.secho('Deploying %s to %s %s...' % (
             self.task_definition().revision(),
-            self.cluster,
-            self.service_name),
+            self.cluster(),
+            self.name()),
             fg='blue'
         )
         params = {
-            'cluster': self.cluster,
-            'service': self.service_name,
+            'cluster': self.cluster(),
+            'service': self.name(),
             'taskDefinition': self.task_definition().name(),
             'forceNewDeployment': True
         }
@@ -60,8 +63,8 @@ class Service(object):
     def _describe_service(self):
         try:
             response = self.ecs.describe_services(
-                cluster=self.cluster,
-                services=[self.service_name]
+                cluster=self.cluster(),
+                services=[self.name()]
             )
             return response['services'][0]
         except ClientError as e:
