@@ -4,7 +4,6 @@ import sys
 from botocore.exceptions import ClientError
 
 from ecstools.resources.service import Service
-import ecstools.lib.utils as utils
 
 
 @click.command()
