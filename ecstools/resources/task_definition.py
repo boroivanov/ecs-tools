@@ -28,6 +28,12 @@ class TaskDefinition(object):
     def revision(self):
         return self.td['family'] + ':' + str(self.td['revision'])
 
+    def cpu(self):
+        return self.td['cpu']
+
+    def memory(self):
+        return self.td['memory']
+
     def containers(self):
         return self.td['containerDefinitions']
 
