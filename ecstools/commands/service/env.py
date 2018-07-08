@@ -135,6 +135,7 @@ def set_environment_variables(pairs, envs):
 
 
 def print_environment_variables(envs):
-    for e in envs:
+    sorted_envs = sorted(envs, key=lambda k: k['name'])
+    for e in sorted_envs:
         click.echo('%s=%s' % (e['name'], e['value']))
     sys.exit(0)
