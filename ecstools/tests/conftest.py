@@ -26,7 +26,7 @@ def ecs():
     conn.create_cluster(clusterName='staging')
     conn.create_cluster(clusterName='development')
 
-    for service in ['app1', 'app2', 'worker1']:
+    for service in ['app2', 'worker1', 'app1']:
         # Create task definitions revisions
         for n in range(1, 4):
             conn.register_task_definition(
@@ -63,6 +63,18 @@ def create_container_definitions(image):
                 {
                     'name': 'TEST',
                     'value': '123'
+                },
+                {
+                    'name': 'ENV',
+                    'value': 'production'
+                },
+                {
+                    'name': 'ROLE',
+                    'value': 'webserver'
+                },
+                {
+                    'name': 'KEY',
+                    'value': 'asdf'
                 }
             ],
             'essential': True

@@ -13,5 +13,5 @@ def cli(ctx, arn):
     if not arn:
         clusters = map(lambda x: x.split('/')[-1], clusters)
 
-    for c in clusters:
+    for c in sorted(clusters):
         click.echo(c)

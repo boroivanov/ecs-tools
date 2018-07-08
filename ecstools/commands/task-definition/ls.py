@@ -33,7 +33,7 @@ def cli(ctx, name, arn, num, no_details, repo):
 
 def print_task_definition_families(ecs):
     res = ecs.list_task_definition_families()
-    for family in res['families']:
+    for family in sorted(res['families']):
         click.echo(family)
 
 
