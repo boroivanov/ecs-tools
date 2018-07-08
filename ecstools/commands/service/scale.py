@@ -1,5 +1,6 @@
 import click
 
+from ecstools.resources.service import Service
 import ecstools.lib.utils as utils
 
 
@@ -11,7 +12,10 @@ import ecstools.lib.utils as utils
 def cli(ctx, cluster, service, count):
     """Scale service"""
     ecs = ctx.obj['ecs']
+    ecr = ctx.obj['ecr']
     elbv2 = ctx.obj['elbv2']
+
+    srv = Service(ecs, ecr, cluster, service)
 
     params = {
         'cluster': cluster,
@@ -19,5 +23,5 @@ def cli(ctx, cluster, service, count):
         'desiredCount': count
 
     }
-    utils.update_service(ecs, **params)
+    srv.update_service(**params)
     utils.monitor_deployment(ecs, elbv2, cluster, service)

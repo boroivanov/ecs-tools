@@ -40,10 +40,11 @@ class Service(object):
             self._redeploy_current_task_definition(count)
             return
 
-        td = self._register_new_task_definition(tags)
+        td_dict = self.update_task_definition_images(tags)
+        td = self.register_task_definition(td_dict)
         self.deploy_task_definition(td.name(), count)
 
-    def deploy_task_definition(self, taskDefinition, count):
+    def deploy_task_definition(self, taskDefinition, count=None):
         click.secho('Deploying %s to %s %s...' % (
             self.task_definition().revision(),
             self.cluster(),
@@ -58,7 +59,7 @@ class Service(object):
         }
         if count:
             params['desiredCount'] = count
-        self._update_service(**params)
+        self.update_service(**params)
 
     def _describe_service(self):
         try:
@@ -77,21 +78,21 @@ class Service(object):
             click.echo('Service not found.', err=True)
             sys.exit(1)
 
-    def _update_service(self, **params):
+    def update_service(self, **params):
         try:
             self.ecs.update_service(**params)
         except ClientError as e:
             click.echo(e.response['Error']['Message'], err=True)
             sys.exit(1)
 
-    def _register_new_task_definition(self, tags):
+    def update_task_definition_images(self, tags):
         """
         Creates a copy of the current task definition.
         Validates the new tags are in the repo.
-        Updates the images in the copied task definition and registers it.
-        Returns a new task definition object.
+        Updates the images in the copied task definition dict.
+        Returns an updated task definition dict.
         """
-        td_json = self.task_definition().copy_task_definition()
+        td_dict = self.task_definition().copy_task_definition()
         ecr = Ecr(self.ecr)
 
         for tag in tags:
@@ -100,14 +101,42 @@ class Service(object):
             repo_uri = '{}/{}'.format(current['repo'], current['image'])
             image_uri = '{}:{}'.format(repo_uri, tag)
             ecr.verify_image_in_ecr(current['image'], tag)
-            td_json['containerDefinitions'][index]['image'] = image_uri
+            td_dict['containerDefinitions'][index]['image'] = image_uri
+        return td_dict
 
-        result = self.ecs.register_task_definition(**td_json)
+    def update_container_environment(self, container, environment):
+        """
+        Creates a copy of the current task definition.
+        Updates the environment variables for the specified container.
+        Returns an updated task definition dict.
+        """
+        td_dict = self.task_definition().copy_task_definition()
+
+        for c in td_dict['containerDefinitions']:
+            if c['name'] == container['name']:
+                c['environment'] = environment
+
+        return td_dict
+
+    def register_task_definition(self, td_dict):
+        """
+        Register a new task definition.
+        Returns a new task definition object.
+        """
+        try:
+            result = self.ecs.register_task_definition(**td_dict)
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'AccessDeniedException':
+                click.echo(e, err=True)
+            else:
+                click.echo(e, err=True)
+            sys.exit(1)
+
         td_rev = result['taskDefinition']['taskDefinitionArn'].split('/')[-1]
         new_td = TaskDefinition(self.ecs, td_rev)
 
         click.secho('Registered new task definition: %s' %
-                    new_td.name(), fg='green')
+                    new_td.revision(), fg='green')
         return new_td
 
     def _redeploy_current_task_definition(self, count):
