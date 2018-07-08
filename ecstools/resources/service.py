@@ -25,8 +25,20 @@ class Service(object):
     def cluster(self):
         return self._cluster
 
+    def deployments(self):
+        return self._service['deployments']
+
+    def load_balancers(self):
+        return self._service['loadBalancers']
+
+    def events(self, number):
+        return self._service['events'][:number]
+
     def task_definition(self):
         return self._td
+
+    def containers(self):
+        return self.task_definition().containers()
 
     def images(self):
         return self.task_definition().images()

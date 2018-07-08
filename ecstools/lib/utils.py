@@ -1,10 +1,8 @@
-import click
 import time
-import sys
-
-from botocore.exceptions import ClientError
-
 from reprint import output
+
+from ecstools.resources.service import Service
+from ecstools.resources.task_definition import TaskDefinition
 
 idx = 0
 
@@ -15,30 +13,31 @@ def index():
     return idx
 
 
-def monitor_deployment(ecs, elbv2, cluster, service):
-    # Reprint service and deployments info
+def monitor_deployment(ecs, elbv2, cluster, service, interval=5):
+    """
+    Reprint service and deployments info
+    """
     with output(initial_len=20, interval=0) as out:
         while True:
-            s = describe_services(ecs, cluster, service)
-
             global idx
             idx = 0
 
-            cls_name = s['clusterArn'].split('/')[-1]
-            srv_name = s['serviceName']
-            out[idx] = '{} {} deployments:'.format(cls_name, srv_name)
+            srv = Service(ecs, None, cluster, service)
+
+            out[idx] = '{} {} deployments:'.format(srv.cluster(), srv.name())
             out[index()] = '\n'
 
-            print_deployment_info(idx, out, ecs, s['deployments'])
+            print_deployment_info(idx, out, ecs, srv)
             out[index()] = '\n'
-            print_loadbalancer_into(idx, out, elbv2, s['loadBalancers'])
-            print_ecs_events(idx, out, s['events'][:2])
+            print_loadbalancer_into(idx, out, elbv2, srv)
+            print_ecs_events(idx, out, srv)
 
-            time.sleep(2)
+            del srv
+            time.sleep(interval)
 
 
-def print_deployment_info(idx, out, ecs, deployments):
-    for d in deployments:
+def print_deployment_info(idx, out, ecs, srv):
+    for d in srv.deployments():
         d_info = (
             d['status'],
             d['taskDefinition'].split('/')[-1],
@@ -46,15 +45,14 @@ def print_deployment_info(idx, out, ecs, deployments):
             d['runningCount'],
             d['pendingCount']
         )
-        idx += deployments.index(d)
+        idx += srv.deployments().index(d)
         out[index()] = '{:<8} {}  desired: {} running: {} ' \
             'pending: {}'.format(
             *d_info)
 
         # Print Container Information
-        td = describe_task_definition(ecs, d['taskDefinition'])
-        containers = td['containerDefinitions']
-        for c in containers:
+        td = TaskDefinition(ecs, d['taskDefinition'])
+        for c in td.containers():
             out[index()] = '{} - {}'.format(
                 ' ' * 8,
                 c['image'].split('/')[-1]
@@ -62,8 +60,8 @@ def print_deployment_info(idx, out, ecs, deployments):
     out[index()] = '\n'
 
 
-def print_loadbalancer_into(idx, out, elbv2, loadBalancers):
-    for lb in loadBalancers:
+def print_loadbalancer_into(idx, out, elbv2, srv):
+    for lb in srv.load_balancers():
         if 'targetGroupArn' in lb:
             tg_info = describe_target_group_info(elbv2, lb)
             out[index()] = 'Target Group: {group}  ' \
@@ -72,7 +70,8 @@ def print_loadbalancer_into(idx, out, elbv2, loadBalancers):
     out[index()] = '\n'
 
 
-def print_ecs_events(idx, out, events):
+def print_ecs_events(idx, out, srv):
+    events = srv.events(2)
     for e in events:
         idx += events.index(e)
         createdAt = e['createdAt'].replace(microsecond=0)
@@ -102,52 +101,3 @@ def target_health_states(target_health_descriptions):
         else:
             states[state] = 1
     return states
-
-
-def describe_task_definition(ecs, td_name):
-    try:
-        res = ecs.describe_task_definition(taskDefinition=td_name)
-    except ClientError as e:
-        click.echo(e.response['Error']['Message'], err=True)
-        sys.exit(1)
-    return res['taskDefinition']
-
-
-def describe_services(ecs, cluster, service):
-    try:
-        response = ecs.describe_services(
-            cluster=cluster,
-            services=[service]
-        )
-        return response['services'][0]
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'ClusterNotFoundException':
-            click.echo('Cluster not found.', err=True)
-        else:
-            click.echo(e, err=True)
-        sys.exit(1)
-    except IndexError:
-        click.echo('Service not found.', err=True)
-        sys.exit(1)
-
-
-def update_service(ecs, **params):
-    try:
-        ecs.update_service(**params)
-    except ClientError as e:
-        click.echo(e.response['Error']['Message'], err=True)
-        sys.exit(1)
-
-
-def copy_task_definition(td):
-    aws_reserved_params = ['status',
-                           'compatibilities',
-                           'taskDefinitionArn',
-                           'revision',
-                           'requiresAttributes'
-                           ]
-    new_td = td.copy()
-
-    for k in aws_reserved_params:
-        del new_td[k]
-    return new_td
