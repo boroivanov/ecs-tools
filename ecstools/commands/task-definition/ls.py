@@ -1,6 +1,6 @@
 import click
 
-import ecstools.lib.utils as utils
+from ecstools.resources.task_definition import TaskDefinition
 
 
 @click.command(short_help='List tasks definitions families / revisions')
@@ -33,7 +33,7 @@ def cli(ctx, name, arn, num, no_details, repo):
 
 def print_task_definition_families(ecs):
     res = ecs.list_task_definition_families()
-    for family in res['families']:
+    for family in sorted(res['families']):
         click.echo(family)
 
 
@@ -60,12 +60,13 @@ def print_task_definition_info(ecs, repo, definitions, no_details):
         if no_details:
             click.echo(td_name)
             continue
-        td = utils.describe_task_definition(ecs, td_name)
-        click.secho('%s cpu: %s memory: %s' % (td_name,
-                                               td.get('cpu', '-'),
-                                               td.get('memory', '-')
+
+        td = TaskDefinition(ecs, td_name)
+        click.secho('%s cpu: %s memory: %s' % (td.revision(),
+                                               td.cpu(),
+                                               td.memory()
                                                ), fg='blue')
-        print_containers_info(repo, td['containerDefinitions'])
+        print_containers_info(repo, td.containers())
 
 
 def print_containers_info(repo, containers):

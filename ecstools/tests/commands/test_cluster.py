@@ -8,5 +8,5 @@ class TestCluster(object):
 
     def test_cluster_ls(self, runner):
         result = runner.invoke(main.cli, ['cluster', 'ls'])
-        expected = 'production\nstaging\ndevelopment\n'
+        expected = 'development\nproduction\nstaging\n'
         assert result.output == expected

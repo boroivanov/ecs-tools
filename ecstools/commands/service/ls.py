@@ -3,7 +3,7 @@ import sys
 
 from botocore.exceptions import ClientError
 
-import ecstools.lib.utils as utils
+from ecstools.resources.service import Service
 
 
 @click.command()
@@ -14,6 +14,7 @@ import ecstools.lib.utils as utils
 def cli(ctx, cluster, all_stats, arn):
     """List services"""
     ecs = ctx.obj['ecs']
+    ecr = ctx.obj['ecr']
 
     services = list_services(ecs, cluster)
 
@@ -21,11 +22,9 @@ def cli(ctx, cluster, all_stats, arn):
         services = sorted(map(lambda x: x.split('/')[-1], services))
 
     for srv in services:
-        if all_stats:
-            s = utils.describe_services(ecs, cluster, srv)
-            td = utils.describe_task_definition(ecs, s['taskDefinition'])
-            containers = td['containerDefinitions']
-            print_service_info(s, td, containers)
+        if all_stats and not arn:
+            service = Service(ecs, ecr, cluster, srv)
+            print_service_info(service)
         else:
             click.echo(srv)
 
@@ -54,16 +53,18 @@ def list_services(ecs, cluster):
     return services
 
 
-def print_service_info(srv, td, containers):
-    click.echo('{srv_name:32} {task_def:48} {running:3}/{desired:<3} ' +
-               '{cpu} {memory} {image}'.format(
-                   srv_name=srv['serviceName'],
-                   task_def=srv['taskDefinition'].split('/')[-1],
-                   running=srv['runningCount'],
-                   desired=srv['desiredCount'],
-                   cpu=td['cpu'],
-                   memory=td['memory'],
-                   image=' '.join('{}'.format(
-                       c['image'].split('/')[1]) for c in containers)
-               )
-               )
+def print_service_info(srv):
+    images = srv.task_definition().images()
+    click.echo('{srv_name:32} {task_def:48} {running:3}/{desired:<3} '.format(
+        srv_name=srv.name(),
+        task_def=srv.task_definition().revision(),
+        running=srv.service()['runningCount'],
+        desired=srv.service()['desiredCount'],
+    ), nl=False
+    )
+    click.echo('{cpu} {memory} {images}'.format(
+        cpu=srv.task_definition().cpu(),
+        memory=srv.task_definition().memory(),
+        images=' '.join('{}:{}'.format(i['image'], i['tag']) for i in images)
+    )
+    )

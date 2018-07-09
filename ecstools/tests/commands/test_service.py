@@ -17,5 +17,6 @@ class TestService(object):
             ['service', 'env', 'production', 'app1']
         )
         expected = 'Current task definition for production app1: ' + \
-            'production-app1:3\n\n==> Container: app1\nTEST=123\n'
+            'production-app1:3\n\n==> Container: app1\nENV=production\n' + \
+            'KEY=asdf\nROLE=webserver\nTEST=123\n'
         assert result.output == expected

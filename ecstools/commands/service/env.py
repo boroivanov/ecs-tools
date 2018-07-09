@@ -3,8 +3,7 @@ import sys
 import copy
 import six
 
-from botocore.exceptions import ClientError
-
+from ecstools.resources.service import Service
 import ecstools.lib.utils as utils
 
 
@@ -12,7 +11,6 @@ import ecstools.lib.utils as utils
 @click.argument('cluster', nargs=1)
 @click.argument('service', nargs=1)
 @click.argument('pairs', nargs=-1)
-# @click.option('-c', '--container', help='Optional container name')
 @click.option('-d', '--delete', is_flag=True,
               help='Delete environment variable')
 @click.pass_context
@@ -27,29 +25,22 @@ def cli(ctx, cluster, service, pairs, delete):
     $ ecs service env CLUSTER SERVICE KEY1=VALUE1 KEY2=VALUE2 ...
     """
     ecs = ctx.obj['ecs']
+    ecr = ctx.obj['ecr']
     elbv2 = ctx.obj['elbv2']
+    srv = Service(ecs, ecr, cluster, service)
 
-    srv = utils.describe_services(ecs, cluster, service)
-    td_arn = srv['taskDefinition']
-    click.secho('Current task definition for %s %s: %s' %
-                (cluster, service, td_arn.split('/')[-1]), fg='blue')
-    td = utils.describe_task_definition(ecs, td_arn)
-    containers = td['containerDefinitions']
-    container = container_selection(containers)
+    click.secho('Current task definition for {} {}: {}'.format(
+                cluster, service, srv.task_definition().revision()
+                ), fg='blue')
 
+    container = container_selection(srv.task_definition().containers())
     click.secho(('\n==> Container: %s' % container['name']), fg='white')
 
     # Just print env vars if none were passed
     if len(pairs) == 0:
         print_environment_variables(container['environment'])
 
-    envs = copy.deepcopy(container['environment'])
-
-    # Delete variable if '-d' is passed
-    if delete:
-        new_envs = delete_environment_variables(pairs, envs)
-    else:
-        new_envs = set_environment_variables(pairs, envs)
+    new_envs = update_environment_variables(container, pairs, delete)
 
     if new_envs == container['environment']:
         click.echo('\nNo updates')
@@ -57,51 +48,14 @@ def cli(ctx, cluster, service, pairs, delete):
 
     click.echo()
     confirm_input('Do you want to create a new task definition revision? ')
-
-    # Register new task definition with the new environment variables
-    try:
-        td_name = register_task_definition_with_envs(
-            ecs, td, container['name'], new_envs)
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'AccessDeniedException':
-            click.echo(e, err=True)
-        else:
-            click.echo(e, err=True)
-        sys.exit(1)
+    td_dict = srv.update_container_environment(container, new_envs)
+    td = srv.register_task_definition(td_dict)
 
     confirm_input('Do you want to deploy your changes? ')
+    srv.deploy_task_definition(td)
 
-    # Deploy the new task definition
-    deploy_task_definition(ecs, cluster, service, td_name)
     click.echo()
     utils.monitor_deployment(ecs, elbv2, cluster, service)
-
-
-def register_task_definition_with_envs(ecs, td, container, envs):
-    """ Register new task definition with the new environment variables """
-    new_td = utils.copy_task_definition(td)
-    for c in new_td['containerDefinitions']:
-        if c['name'] == container:
-            c['environment'] = envs
-            new_td_res = ecs.register_task_definition(**new_td)
-            td_name = new_td_res['taskDefinition']['taskDefinitionArn'].split(
-                '/')[-1]
-            click.secho('Registered new task definition: %s' %
-                        td_name, fg='green')
-
-    return td_name
-
-
-def deploy_task_definition(ecs, cluster, service, task_def):
-    click.secho('Deploying %s to %s %s...' %
-                (task_def, cluster, service), fg='blue')
-    params = {
-        'cluster': cluster,
-        'service': service,
-        'taskDefinition': task_def,
-        'forceNewDeployment': True
-    }
-    utils.update_service(ecs, **params)
 
 
 def confirm_input(text):
@@ -137,10 +91,19 @@ def container_selection(containers):
     return containers[0]
 
 
+def update_environment_variables(container, pairs, delete):
+    envs = copy.deepcopy(container['environment'])
+    if delete:
+        return delete_environment_variables(pairs, envs)
+    else:
+        return set_environment_variables(pairs, envs)
+
+
 def delete_environment_variables(pairs, envs):
     for pair in pairs:
+        key = pair.split('=', 1)[0]
         for e in envs:
-            if pair == e['name']:
+            if key == e['name']:
                 click.echo('- %s=%s' % (e['name'], e['value']))
                 envs.remove(e)
     return envs
@@ -172,6 +135,7 @@ def set_environment_variables(pairs, envs):
 
 
 def print_environment_variables(envs):
-    for e in envs:
+    sorted_envs = sorted(envs, key=lambda k: k['name'])
+    for e in sorted_envs:
         click.echo('%s=%s' % (e['name'], e['value']))
     sys.exit(0)
