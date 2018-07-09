@@ -101,9 +101,9 @@ def update_environment_variables(container, pairs, delete):
 
 def delete_environment_variables(pairs, envs):
     for pair in pairs:
-        k, v = pair.split('=', 1)
+        key = pair.split('=', 1)[0]
         for e in envs:
-            if k == e['name']:
+            if key == e['name']:
                 click.echo('- %s=%s' % (e['name'], e['value']))
                 envs.remove(e)
     return envs

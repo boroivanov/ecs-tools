@@ -61,15 +61,18 @@ class TaskDefinition(object):
             'tag': self._image_tag(image)
         }
 
-    def _image_repo(self, image):
+    @staticmethod
+    def _image_repo(image):
         """Strips image repo from image URI"""
         return image.split('/')[0]
 
-    def _image_name(self, image):
+    @staticmethod
+    def _image_name(image):
         """Strips image name from image URI"""
         return image.split('/')[1].split(':')[0]
 
-    def _image_tag(self, image):
+    @staticmethod
+    def _image_tag(image):
         """Strips image tag from image URI"""
         tag = ''
         if ':' in image:
