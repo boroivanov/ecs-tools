@@ -25,6 +25,9 @@ class TestMain(object):
         assert result.output == expected
 
     def test_missing_region(self, runner):
+        """
+        Requires `[profile no-region]` in ~/.aws/config for local tests.
+        """
         result = runner.invoke(
             main.cli,
             ['--profile', 'no-region', 'cluster']

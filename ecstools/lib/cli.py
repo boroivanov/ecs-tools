@@ -4,13 +4,6 @@ import click
 import string
 
 
-def current_dir(wk_file):
-    wk_dir = os.path.dirname(os.path.abspath(wk_file))
-    sub_dir = wk_file[:-3]
-    cur_dir = os.path.join(wk_dir, sub_dir)
-    return cur_dir
-
-
 class MyCLI(click.MultiCommand):
     plugin_folder = os.path.dirname(os.path.realpath(__file__))
 
