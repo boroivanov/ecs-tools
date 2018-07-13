@@ -14,7 +14,7 @@ import ecstools.lib.utils as utils
 @click.option('-d', '--delete', is_flag=True,
               help='Delete environment variable')
 @click.pass_context
-def cli(ctx, cluster, service, pairs, delete):
+def env(ctx, cluster, service, pairs, delete):
     """Manage environment variables
 
     |\b

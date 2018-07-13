@@ -11,7 +11,7 @@ import ecstools.lib.utils as utils
 @click.option('-c', '--count', type=int, default=None,
               help='Update the current number of tasks')
 @click.pass_context
-def cli(ctx, cluster, service, tags, count):
+def deploy(ctx, cluster, service, tags, count):
     """Deploy a task definition to a service
 
     |\b

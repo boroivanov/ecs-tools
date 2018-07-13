@@ -4,7 +4,7 @@ import click
 import string
 
 
-class MyCLI(click.MultiCommand):
+class Subcommand(click.MultiCommand):
     plugin_folder = os.path.dirname(os.path.realpath(__file__))
 
     def list_commands(self, ctx):
@@ -25,4 +25,4 @@ class MyCLI(click.MultiCommand):
         with open(fn) as f:
             code = compile(f.read(), fn, 'exec')
             eval(code, ns, ns)
-        return ns['cli']
+        return ns[name]

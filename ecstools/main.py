@@ -4,22 +4,22 @@ import boto3
 import click
 
 from botocore.exceptions import ProfileNotFound, NoRegionError
-from ecstools.lib.cli import MyCLI
+from ecstools.lib.cli import Subcommand
 
 version = '0.1.3'
 
 commands_dir = os.path.join(os.path.dirname(__file__), 'commands')
 
 
-class ClusterCommand(MyCLI):
+class ClusterCommand(Subcommand):
     plugin_folder = os.path.join(commands_dir, 'cluster')
 
 
-class ServiceCommand(MyCLI):
+class ServiceCommand(Subcommand):
     plugin_folder = os.path.join(commands_dir, 'service')
 
 
-class TaskDefinitionCommand(MyCLI):
+class TaskDefinitionCommand(Subcommand):
     plugin_folder = os.path.join(commands_dir, 'task-definition')
 
 
