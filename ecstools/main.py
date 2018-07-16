@@ -4,7 +4,7 @@ import boto3
 import click
 
 from botocore.exceptions import ProfileNotFound, NoRegionError
-from ecstools.lib.cli import Subcommand
+from ecstools.lib.cli import AliasedGroup, Subcommand
 
 version = '0.1.3'
 
@@ -23,7 +23,7 @@ class TaskDefinitionCommand(Subcommand):
     plugin_folder = os.path.join(commands_dir, 'task-definition')
 
 
-@click.group()
+@click.command(cls=AliasedGroup)
 @click.pass_context
 @click.version_option(version=version, message=version)
 @click.option('-p', '--profile', help='AWS profile')
