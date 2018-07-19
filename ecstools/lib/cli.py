@@ -12,7 +12,8 @@ config.read(config_file)
 
 class AliasedGroup(click.Group):
 
-    def _remove_options_parameters(self, args):
+    @staticmethod
+    def _remove_options_parameters(args):
         """
         Removes options parameters.
         Returns a list of argument parameters only.
