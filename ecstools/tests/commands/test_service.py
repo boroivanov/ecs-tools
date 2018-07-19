@@ -11,11 +11,23 @@ class TestService(object):
         expected = 'app1\napp2\nworker1\n'
         assert result.output == expected
 
+    def test_service_ls_alias(self, runner):
+        result = runner.invoke(main.cli, ['ls', 'production'])
+        expected = 'app1\napp2\nworker1\n'
+        assert result.output == expected
+
     def test_service_env(self, runner):
         result = runner.invoke(
             main.cli,
             ['service', 'env', 'production', 'app1']
         )
+        expected = 'Current task definition for production app1: ' + \
+            'production-app1:3\n\n==> Container: app1\nENV=production\n' + \
+            'KEY=asdf\nROLE=webserver\nTEST=123\n'
+        assert result.output == expected
+
+    def test_service_env_alias(self, runner):
+        result = runner.invoke(main.cli, ['env', 'production', 'app1'])
         expected = 'Current task definition for production app1: ' + \
             'production-app1:3\n\n==> Container: app1\nENV=production\n' + \
             'KEY=asdf\nROLE=webserver\nTEST=123\n'

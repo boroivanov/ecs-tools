@@ -9,7 +9,7 @@ import ecstools.lib.utils as utils
 @click.argument('service')
 @click.argument('count', type=int)
 @click.pass_context
-def cli(ctx, cluster, service, count):
+def scale(ctx, cluster, service, count):
     """Scale service"""
     ecs = ctx.obj['ecs']
     ecr = ctx.obj['ecr']

@@ -4,7 +4,7 @@ import click
 @click.command()
 @click.option('-A', '--arn', is_flag=True, help='Show ARN')
 @click.pass_context
-def cli(ctx, arn):
+def ls(ctx, arn):
     """List clusters"""
     ecs = ctx.obj['ecs']
     res = ecs.list_clusters()

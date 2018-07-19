@@ -11,7 +11,7 @@ from ecstools.resources.task_definition import TaskDefinition
 @click.option('-D', '--no-details', is_flag=True, default=False,
               help='Disable revision details')
 @click.pass_context
-def cli(ctx, name, arn, num, no_details, repo):
+def ls(ctx, name, arn, num, no_details, repo):
     """List families / revisions
 
         |\b

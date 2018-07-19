@@ -8,7 +8,7 @@ import ecstools.lib.utils as utils
 @click.argument('cluster')
 @click.argument('service')
 @click.pass_context
-def cli(ctx, cluster, service):
+def desc(ctx, cluster, service):
     """Describe service"""
     ecs = ctx.obj['ecs']
     ecr = ctx.obj['ecr']

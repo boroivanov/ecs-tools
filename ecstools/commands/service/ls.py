@@ -11,7 +11,7 @@ from ecstools.resources.service import Service
 @click.option('-a', '--all-stats', is_flag=True, help='Show more info')
 @click.option('-A', '--arn', is_flag=True, help='Show ARN')
 @click.pass_context
-def cli(ctx, cluster, all_stats, arn):
+def ls(ctx, cluster, all_stats, arn):
     """List services"""
     ecs = ctx.obj['ecs']
     ecr = ctx.obj['ecr']

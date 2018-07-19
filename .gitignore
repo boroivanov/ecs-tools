@@ -1,4 +1,7 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
 *.py[cod]
+*$py.class
 
 # Packages
 *.egg
@@ -20,9 +23,15 @@ __pycache__
 pip-log.txt
 
 # Unit test / coverage reports
+htmlcov/
+.tox/
 .coverage
-.tox
+.coverage.*
+.cache
 nosetests.xml
+coverage.xml
+*,cover
+.hypothesis/
 
 # Translations
 *.mo
