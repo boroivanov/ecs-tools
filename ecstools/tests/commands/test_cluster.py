@@ -10,3 +10,8 @@ class TestCluster(object):
         result = runner.invoke(main.cli, ['cluster', 'ls'])
         expected = 'development\nproduction\nstaging\n'
         assert result.output == expected
+
+    def test_cluster_ls_alias(self, runner):
+        result = runner.invoke(main.cli, ['cls'])
+        expected = 'development\nproduction\nstaging\n'
+        assert result.output == expected

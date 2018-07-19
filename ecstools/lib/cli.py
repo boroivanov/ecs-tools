@@ -2,9 +2,44 @@ import os
 import sys
 import click
 import string
+import configparser
+
+
+config = configparser.ConfigParser()
+config_file = os.path.expanduser('~/.ecstools')
+config.read(config_file)
 
 
 class AliasedGroup(click.Group):
+
+    def _remove_options_parameters(self, args):
+        """
+        Removes options parameters.
+        Returns a list of argument parameters only.
+        """
+        tmp_args = args[:]
+        for arg in tmp_args:
+            if arg.startswith('-'):
+                index = tmp_args.index(arg)
+                try:
+                    tmp_args.pop(index)
+                    tmp_args.pop(index)
+                except IndexError:
+                    pass
+                continue
+        return tmp_args
+
+    def parse_args(self, ctx, args):
+        tmp_args = self._remove_options_parameters(args)
+
+        for arg in tmp_args[:1]:
+            if arg in config['alias']:
+                alias_args = config['alias'][arg].split(' ')
+                index = args.index(arg)
+                args[index:index] = alias_args
+                args.remove(arg)
+                break
+        super(click.Group, self).parse_args(ctx, args)
 
     def get_command(self, ctx, cmd_name):
         """
