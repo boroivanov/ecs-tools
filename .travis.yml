@@ -11,6 +11,7 @@ install:
   - pip install tox-travis
   - mkdir ~/.aws
   - printf "[default]\nregion = us-east-1\n[profile no-region]" > ~/.aws/config
+  - cp .ecstools.example ~/.ecstools
 
 script: tox
 
