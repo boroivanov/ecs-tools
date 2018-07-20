@@ -9,7 +9,7 @@ requirements = [
 
 setup(
     name="ecstools",
-    version="0.1.3",
+    version="0.1.4",
     url="https://github.com/boroivanov/ecs-tools",
 
     author='Borislav Ivanov',
@@ -39,5 +39,6 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
 )

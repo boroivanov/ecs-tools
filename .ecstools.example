@@ -6,4 +6,5 @@ ls = service ls
 lsa = service ls -a
 env = service env
 deploy = service deploy
+desc = service desc
 top = service top
