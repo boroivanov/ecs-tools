@@ -8,3 +8,9 @@ env = service env
 deploy = service deploy
 desc = service desc
 top = service top
+
+# Example: Deploy service group to production cluster
+dp = service deploy production app1 -g
+
+[service-group]
+app1 = app1 app1-worker1 app1-worker2

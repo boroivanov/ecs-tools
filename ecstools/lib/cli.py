@@ -2,12 +2,8 @@ import os
 import sys
 import click
 import string
-import configparser
 
-
-config = configparser.ConfigParser()
-config_file = os.path.expanduser('~/.ecstools')
-config.read(config_file)
+from ecstools.lib.config import config
 
 
 class AliasedGroup(click.Group):
