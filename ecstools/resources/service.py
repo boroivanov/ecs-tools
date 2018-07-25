@@ -43,26 +43,27 @@ class Service(object):
     def images(self):
         return self.task_definition().images()
 
-    def deploy_tags(self, tags, count):
+    def deploy_tags(self, tags, count, verbose):
         """
         Redeploy the current task definition if all tags are already deployed.
         Otherwise, deploy the updated task definition with the new tags.
         """
         if self._are_images_in_current_task_definition(tags):
-            self._redeploy_current_task_definition(count)
+            self._redeploy_current_task_definition(count, verbose)
             return
 
         td_dict = self.update_task_definition_images(tags)
-        td = self.register_task_definition(td_dict)
-        self.deploy_task_definition(td.name(), count)
+        td = self.register_task_definition(td_dict, verbose)
+        self.deploy_task_definition(td.name(), verbose, count)
 
-    def deploy_task_definition(self, taskDefinition, count=None):
-        click.secho('Deploying %s to %s %s...' % (
-            self.task_definition().revision(),
-            self.cluster(),
-            self.name()),
-            fg='blue'
-        )
+    def deploy_task_definition(self, taskDefinition, verbose, count=None):
+        if verbose:
+            click.secho('Deploying %s to %s %s...' % (
+                self.task_definition().revision(),
+                self.cluster(),
+                self.name()),
+                fg='blue'
+            )
         params = {
             'cluster': self.cluster(),
             'service': self.name(),
@@ -130,7 +131,7 @@ class Service(object):
 
         return td_dict
 
-    def register_task_definition(self, td_dict):
+    def register_task_definition(self, td_dict, verbose):
         """
         Register a new task definition.
         Returns a new task definition object.
@@ -147,15 +148,19 @@ class Service(object):
         td_rev = result['taskDefinition']['taskDefinitionArn'].split('/')[-1]
         new_td = TaskDefinition(self.ecs, td_rev)
 
-        click.secho('Registered new task definition: %s' %
-                    new_td.revision(), fg='green')
+        if verbose:
+            click.secho('Registered new task definition: %s' %
+                        new_td.revision(), fg='green')
         return new_td
 
-    def _redeploy_current_task_definition(self, count):
-        click.secho('The images are already in the current task definition.')
-        click.secho(('Forcing a new deployment of %s' %
-                     self.task_definition().revision()), fg='white')
-        self.deploy_task_definition(self.task_definition().revision(), count)
+    def _redeploy_current_task_definition(self, count, verbose):
+        if verbose:
+            click.secho(
+                'The images are already in the current task definition.')
+            click.secho(('Forcing a new deployment of %s' %
+                         self.task_definition().revision()), fg='white')
+        self.deploy_task_definition(self.task_definition().revision(),
+                                    verbose, count)
 
     def _are_images_in_current_task_definition(self, tags):
         current_tags = [i['tag'] for i in self.images()]
