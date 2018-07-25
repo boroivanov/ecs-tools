@@ -13,27 +13,60 @@ def index():
     return idx
 
 
-def monitor_deployment(ecs, elbv2, cluster, service, interval=5):
+def monitor_deployment(ecs, elbv2, cluster, services, interval=5):
     """
     Reprint service and deployments info
     """
+    srv_len = len(max(services, key=len))
+    start_time = time.time()
+
     with output(initial_len=20, interval=0) as out:
         while True:
             global idx
             idx = 0
 
-            srv = Service(ecs, None, cluster, service)
+            elapsed_time = time.time() - start_time
+            elapsed = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
+            out[index()] = 'Elapsed: {}'.format(elapsed)
 
-            out[idx] = '{} {} deployments:'.format(srv.cluster(), srv.name())
-            out[index()] = '\n'
+            if isinstance(services, list):
+                for service in services:
+                    srv = Service(ecs, None, cluster, service)
+                    print_group_deployment_info(
+                        idx, out, ecs, elbv2, srv, srv_len)
+            else:
+                srv = Service(ecs, None, cluster, services)
+                out[index()] = '{} {} deployments:'.format(
+                    srv.cluster(), srv.name())
+                out[index()] = '\n'
 
-            print_deployment_info(idx, out, ecs, srv)
-            out[index()] = '\n'
-            print_loadbalancer_into(idx, out, elbv2, srv)
-            print_ecs_events(idx, out, srv)
+                print_deployment_info(idx, out, ecs, srv)
+                out[index()] = '\n'
+                print_loadbalancer_into(idx, out, elbv2, srv)
+                print_ecs_events(idx, out, srv)
 
             del srv
             time.sleep(interval)
+
+
+def print_group_deployment_info(idx, out, ecs, elbv2, srv, srv_len):
+    for d in srv.deployments()[:1]:
+        d_info = {
+            'cluster': srv.cluster(),
+            'service': srv.name(),
+            'runningCount': d['runningCount'],
+            'desiredCount': d['desiredCount'],
+            'states': 'n/a',
+            'pad': srv_len
+        }
+        for lb in srv.load_balancers():
+            if 'targetGroupArn' in lb:
+                tg_info = describe_target_group_info(elbv2, lb)
+                d_info = merge_two_dicts(d_info, tg_info)
+
+        idx += srv.deployments().index(d)
+        out[index()] = '{cluster} {service:{pad}}  ' \
+            '{runningCount}/{desiredCount}  LB: [{states}]'.format(**d_info)
 
 
 def print_deployment_info(idx, out, ecs, srv):
@@ -101,3 +134,9 @@ def target_health_states(target_health_descriptions):
         else:
             states[state] = 1
     return states
+
+
+def merge_two_dicts(x, y):
+    z = x.copy()
+    z.update(y)
+    return z
