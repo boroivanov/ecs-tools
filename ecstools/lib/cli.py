@@ -19,6 +19,7 @@ class AliasedGroup(click.Group):
             if arg.startswith('-'):
                 index = tmp_args.index(arg)
                 try:
+                    # remove flag and its value
                     tmp_args.pop(index)
                     tmp_args.pop(index)
                 except IndexError:
