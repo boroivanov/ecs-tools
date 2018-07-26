@@ -24,27 +24,29 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5):
             index = index_generator()
 
             elapsed_time = time.time() - start_time
-            elapsed = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
+            gmt = time.gmtime(elapsed_time)
+            elapsed = time.strftime("%H:%M:%S", gmt)
             out[next(index)] = 'Elapsed: {}'.format(elapsed)
 
-            if isinstance(services, list):
-                for service in services:
-                    srv = Service(ecs, None, cluster, service)
-                    print_group_deployment_info(
-                        index, out, ecs, elbv2, srv, srv_len)
-            else:
-                srv = Service(ecs, None, cluster, services)
-                out[next(index)] = '{} {} deployments:'.format(
-                    srv.cluster(), srv.name())
-                out[next(index)] = '\n'
+            if gmt.tm_sec % interval == 0:
+                if isinstance(services, list):
+                    for service in services:
+                        srv = Service(ecs, None, cluster, service)
+                        print_group_deployment_info(
+                            index, out, ecs, elbv2, srv, srv_len)
+                else:
+                    srv = Service(ecs, None, cluster, services)
+                    out[next(index)] = '{} {} deployments:'.format(
+                        srv.cluster(), srv.name())
+                    out[next(index)] = '\n'
 
-                print_deployment_info(index, out, ecs, srv)
-                out[next(index)] = '\n'
-                print_loadbalancer_into(index, out, elbv2, srv)
-                print_ecs_events(index, out, srv)
+                    print_deployment_info(index, out, ecs, srv)
+                    out[next(index)] = '\n'
+                    print_loadbalancer_into(index, out, elbv2, srv)
+                    print_ecs_events(index, out, srv)
 
-            del srv
-            time.sleep(interval)
+                del srv
+            time.sleep(1)
 
 
 def print_group_deployment_info(index, out, ecs, elbv2, srv, srv_len):
