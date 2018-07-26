@@ -4,13 +4,12 @@ from reprint import output
 from ecstools.resources.service import Service
 from ecstools.resources.task_definition import TaskDefinition
 
-idx = 0
 
-
-def index():
-    global idx
-    idx += 1
-    return idx
+def index_generator():
+    i = 0
+    while True:
+        yield i
+        i = i + 1
 
 
 def monitor_deployment(ecs, elbv2, cluster, services, interval=5):
@@ -22,34 +21,33 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5):
 
     with output(initial_len=20, interval=0) as out:
         while True:
-            global idx
-            idx = 0
+            index = index_generator()
 
             elapsed_time = time.time() - start_time
             elapsed = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
-            out[index()] = 'Elapsed: {}'.format(elapsed)
+            out[next(index)] = 'Elapsed: {}'.format(elapsed)
 
             if isinstance(services, list):
                 for service in services:
                     srv = Service(ecs, None, cluster, service)
                     print_group_deployment_info(
-                        idx, out, ecs, elbv2, srv, srv_len)
+                        index, out, ecs, elbv2, srv, srv_len)
             else:
                 srv = Service(ecs, None, cluster, services)
-                out[index()] = '{} {} deployments:'.format(
+                out[next(index)] = '{} {} deployments:'.format(
                     srv.cluster(), srv.name())
-                out[index()] = '\n'
+                out[next(index)] = '\n'
 
-                print_deployment_info(idx, out, ecs, srv)
-                out[index()] = '\n'
-                print_loadbalancer_into(idx, out, elbv2, srv)
-                print_ecs_events(idx, out, srv)
+                print_deployment_info(index, out, ecs, srv)
+                out[next(index)] = '\n'
+                print_loadbalancer_into(index, out, elbv2, srv)
+                print_ecs_events(index, out, srv)
 
             del srv
             time.sleep(interval)
 
 
-def print_group_deployment_info(idx, out, ecs, elbv2, srv, srv_len):
+def print_group_deployment_info(index, out, ecs, elbv2, srv, srv_len):
     for d in srv.deployments()[:1]:
         d_info = {
             'cluster': srv.cluster(),
@@ -64,12 +62,11 @@ def print_group_deployment_info(idx, out, ecs, elbv2, srv, srv_len):
                 tg_info = describe_target_group_info(elbv2, lb)
                 d_info = merge_two_dicts(d_info, tg_info)
 
-        idx += srv.deployments().index(d)
-        out[index()] = '{cluster} {service:{pad}}  ' \
+        out[next(index)] = '{cluster} {service:{pad}}  ' \
             '{runningCount}/{desiredCount}  LB: [{states}]'.format(**d_info)
 
 
-def print_deployment_info(idx, out, ecs, srv):
+def print_deployment_info(index, out, ecs, srv):
     for d in srv.deployments():
         d_info = (
             d['status'],
@@ -78,37 +75,35 @@ def print_deployment_info(idx, out, ecs, srv):
             d['runningCount'],
             d['pendingCount']
         )
-        idx += srv.deployments().index(d)
-        out[index()] = '{:<8} {}  desired: {} running: {} ' \
+        out[next(index)] = '{:<8} {}  desired: {} running: {} ' \
             'pending: {}'.format(
             *d_info)
 
         # Print Container Information
         td = TaskDefinition(ecs, d['taskDefinition'])
         for c in td.containers():
-            out[index()] = '{} - {}'.format(
+            out[next(index)] = '{} - {}'.format(
                 ' ' * 8,
                 c['image'].split('/')[-1]
             )
-    out[index()] = '\n'
+    out[next(index)] = '\n'
 
 
-def print_loadbalancer_into(idx, out, elbv2, srv):
+def print_loadbalancer_into(index, out, elbv2, srv):
     for lb in srv.load_balancers():
         if 'targetGroupArn' in lb:
             tg_info = describe_target_group_info(elbv2, lb)
-            out[index()] = 'Target Group: {group}  ' \
+            out[next(index)] = 'Target Group: {group}  ' \
                 '{container} {port} {states}'.format(
                 **tg_info)
-    out[index()] = '\n'
+    out[next(index)] = '\n'
 
 
-def print_ecs_events(idx, out, srv):
+def print_ecs_events(index, out, srv):
     events = srv.events(2)
     for e in events:
-        idx += events.index(e)
         createdAt = e['createdAt'].replace(microsecond=0)
-        out[index()] = '{} {}'.format(createdAt, e['message'])
+        out[next(index)] = '{} {}'.format(createdAt, e['message'])
 
 
 def describe_target_group_info(elbv2, lb):
