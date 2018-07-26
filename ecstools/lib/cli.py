@@ -30,12 +30,15 @@ class AliasedGroup(click.Group):
         tmp_args = self._remove_options_parameters(args)
 
         for arg in tmp_args[:1]:
-            if arg in config['alias']:
-                alias_args = config['alias'][arg].split(' ')
-                index = args.index(arg)
-                args[index:index] = alias_args
-                args.remove(arg)
-                break
+            try:
+                if arg in config['alias']:
+                    alias_args = config['alias'][arg].split(' ')
+                    index = args.index(arg)
+                    args[index:index] = alias_args
+                    args.remove(arg)
+                    break
+            except KeyError:
+                pass
         super(click.Group, self).parse_args(ctx, args)
 
     def get_command(self, ctx, cmd_name):

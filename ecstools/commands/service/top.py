@@ -1,3 +1,4 @@
+import sys
 import click
 
 import ecstools.lib.utils as utils
@@ -14,8 +15,15 @@ def top(ctx, cluster, service, group):
     ecs = ctx.obj['ecs']
     elbv2 = ctx.obj['elbv2']
 
-    if group:
-        if service in config['service-group']:
-            service = config['service-group'][service].split(' ')
+    try:
+        if group:
+            if service in config['service-group']:
+                service = config['service-group'][service].split(' ')
+            else:
+                click.echo('Error: Service group not in config file.')
+                sys.exit(1)
+    except KeyError:
+        click.echo('Error: Section "service-config" not in config file.')
+        sys.exit(1)
 
     utils.monitor_deployment(ecs, elbv2, cluster, service)

@@ -46,12 +46,16 @@ def run_service_deployment(ctx, cluster, service, tags, count, verbose):
 
 
 def run_group_deployment(ctx, cluster, service, tags, count, verbose):
-    if service in config['service-group']:
-        services = config['service-group'][service].split(' ')
+    try:
+        if service in config['service-group']:
+            services = config['service-group'][service].split(' ')
 
-        for srv in services:
-            deploy_service(ctx, cluster, srv, tags, count, verbose)
-        utils.monitor_deployment(ctx.obj['ecs'], ctx.obj['elbv2'],
-                                 cluster, services)
-    else:
-        click.echo('Deployment group not found in config.')
+            for srv in services:
+                deploy_service(ctx, cluster, srv, tags, count, verbose)
+            utils.monitor_deployment(ctx.obj['ecs'], ctx.obj['elbv2'],
+                                     cluster, services)
+        else:
+            click.echo('Error: Service group not in config file.')
+    except KeyError:
+        click.echo('Error: Section "service-config" not in config file.')
+        sys.exit(1)
