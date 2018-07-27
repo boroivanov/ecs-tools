@@ -51,7 +51,7 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
                     print_ecs_events(index, out, srv)
 
                 out[next(index)] = 'Ctrl-C to quit the watcher.' \
-                    ' No deployments will be interupted.'
+                    ' No deployments will be interrupted.'
 
                 if exit_on_complete:
                     if all([x == 'Completed' for x in statuses.values()]):
