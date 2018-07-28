@@ -90,7 +90,7 @@ def print_group_deployment_info(index, out, ecs, elbv2, srv, srv_len):
 def print_deployment_info(index, out, ecs, srv):
     for d in srv.deployments():
         status = 'InProgress'
-        if len(srv.deployments()):
+        if len(srv.deployments()) == 1:
             status = 'Completed'
         if d['runningCount'] != d['desiredCount']:
             status = 'InProgress'
