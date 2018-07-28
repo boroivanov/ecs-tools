@@ -7,6 +7,7 @@ lsa = service ls -a
 env = service env
 deploy = service deploy
 desc = service desc
+scale = service scale
 top = service top
 
 # Example: Deploy service group to production cluster
