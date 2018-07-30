@@ -2,12 +2,8 @@ import os
 import sys
 import click
 import string
-import configparser
 
-
-config = configparser.ConfigParser()
-config_file = os.path.expanduser('~/.ecstools')
-config.read(config_file)
+from ecstools.lib.config import config
 
 
 class AliasedGroup(click.Group):
@@ -23,6 +19,7 @@ class AliasedGroup(click.Group):
             if arg.startswith('-'):
                 index = tmp_args.index(arg)
                 try:
+                    # remove flag and its value
                     tmp_args.pop(index)
                     tmp_args.pop(index)
                 except IndexError:
@@ -34,12 +31,15 @@ class AliasedGroup(click.Group):
         tmp_args = self._remove_options_parameters(args)
 
         for arg in tmp_args[:1]:
-            if arg in config['alias']:
-                alias_args = config['alias'][arg].split(' ')
-                index = args.index(arg)
-                args[index:index] = alias_args
-                args.remove(arg)
-                break
+            try:
+                if arg in config['alias']:
+                    alias_args = config['alias'][arg].split(' ')
+                    index = args.index(arg)
+                    args[index:index] = alias_args
+                    args.remove(arg)
+                    break
+            except KeyError:
+                pass
         super(click.Group, self).parse_args(ctx, args)
 
     def get_command(self, ctx, cmd_name):

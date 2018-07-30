@@ -56,7 +56,7 @@ def print_task_definition_revisions(ecs, name, arn, num, no_details, repo):
 
 
 def print_task_definition_info(ecs, repo, definitions, no_details):
-    for td_name in definitions:
+    for td_name in sorted(definitions):
         if no_details:
             click.echo(td_name)
             continue

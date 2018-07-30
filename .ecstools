@@ -1,0 +1,18 @@
+[alias]
+cls = cluster ls
+td = task-definition ls
+
+ls = service ls
+lsa = service ls -a
+env = service env
+deploy = service deploy
+desc = service desc
+scale = service scale
+top = service top
+
+# Example: Deploy service group to production cluster
+dp = service deploy production app1 -g
+
+[service-group]
+app1 = app1 app1-worker1 app1-worker2
+pytest-group = app1 app2 worker1

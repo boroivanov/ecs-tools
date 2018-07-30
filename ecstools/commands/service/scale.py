@@ -24,4 +24,5 @@ def scale(ctx, cluster, service, count):
 
     }
     srv.update_service(**params)
-    utils.monitor_deployment(ecs, elbv2, cluster, service)
+    utils.monitor_deployment(ecs, elbv2, cluster, service,
+                             exit_on_complete=True)
