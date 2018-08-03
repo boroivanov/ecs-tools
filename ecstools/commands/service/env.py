@@ -49,7 +49,7 @@ def env(ctx, cluster, service, pairs, delete):
     click.echo()
     confirm_input('Do you want to create a new task definition revision? ')
     td_dict = srv.update_container_environment(container, new_envs)
-    td = srv.register_task_definition(td_dict)
+    td = srv.register_task_definition(td_dict, verbose=True)
 
     confirm_input('Do you want to deploy your changes? ')
     srv.deploy_task_definition(td)
