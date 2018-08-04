@@ -25,14 +25,11 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
     with output(initial_len=20, interval=0) as out:
         while True:
             index = index_generator()
-
-            elapsed_time = time.time() - start_time
-            gmt = time.gmtime(elapsed_time)
-            elapsed = time.strftime("%H:%M:%S", gmt)
+            gmt, elapsed = get_elapsed_time(start_time)
             out[next(index)] = 'Elapsed: {}'.format(elapsed)
-            statuses = {}
 
             if gmt.tm_sec % interval == 0:
+                statuses = {}
                 for service in services:
                     srv = Service(ecs, None, cluster, service)
                     status = print_group_deployment_info(
@@ -113,6 +110,13 @@ def deployment_status(service, deployment):
     if deployment['runningCount'] != deployment['desiredCount']:
         status = 'InProgress'
     return status
+
+
+def get_elapsed_time(start_time):
+    elapsed_time = time.time() - start_time
+    gmt = time.gmtime(elapsed_time)
+    elapsed = time.strftime("%H:%M:%S", gmt)
+    return gmt, elapsed
 
 
 def check_for_completion(index, out, statuses):
