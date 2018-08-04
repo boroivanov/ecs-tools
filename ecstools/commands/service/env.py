@@ -113,24 +113,35 @@ def set_environment_variables(pairs, envs):
     validate_pairs(pairs)
 
     for pair in pairs:
-        k, v = pair.split('=', 1)
-        matched = False
-        # Check if env var already exists
-        for e in envs:
-            if k == e['name']:
-                if v != e['value']:
-                    # Env var value is different
-                    click.echo('- %s=%s' % (e['name'], e['value']))
-                    click.echo('+ ', nl=False)
-                    e['value'] = v
-                click.echo('%s=%s' % (k, v))
-                matched = True
-                break
+        key, value = pair.split('=', 1)
+        envs, matched = update_env(envs, key, value)
         if not matched:
-            click.echo('+ %s=%s' % (k, v))
-            envs.append({'name': k, 'value': v})
-
+            envs = add_env(envs, key, value)
     return envs
+
+
+def add_env(envs, key, value):
+    click.echo('+ %s=%s' % (key, value))
+    envs.append({'name': key, 'value': value})
+    return envs
+
+
+def update_env(envs, key, value):
+    matched = False
+    for env in envs:
+        if key == env['name']:
+            print_env_value_diff(env, key, value)
+            env['value'] = value
+            matched = True
+            break
+    return envs, matched
+
+
+def print_env_value_diff(env, key, value):
+    if value != env['value']:
+        click.echo('- %s=%s' % (env['name'], env['value']))
+        click.echo('+ ', nl=False)
+    click.echo('%s=%s' % (key, value))
 
 
 def print_environment_variables(envs):
