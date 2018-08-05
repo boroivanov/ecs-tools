@@ -27,22 +27,18 @@ def deploy(ctx, cluster, service, tags, group, count, verbose):
         sys.exit(1)
 
     if group:
-        run_group_deployment(ctx, cluster, service, tags, count, verbose)
+        service = run_group_deployment(ctx, cluster, service, tags,
+                                       count, verbose)
     else:
-        run_service_deployment(ctx, cluster, service, tags, count, verbose)
+        deploy_service(ctx, cluster, service, tags, count, verbose)
+
+    utils.monitor_deployment(ctx.obj['ecs'], ctx.obj['elbv2'],
+                             cluster, service, exit_on_complete=True)
 
 
 def deploy_service(ctx, cluster, service, tags, count, verbose):
     srv = Service(ctx.obj['ecs'], ctx.obj['ecr'], cluster, service)
     srv.deploy_tags(tags, count, verbose)
-
-
-def run_service_deployment(ctx, cluster, service, tags, count, verbose):
-    deploy_service(ctx, cluster, service, tags, count, verbose)
-
-    click.echo()
-    utils.monitor_deployment(ctx.obj['ecs'], ctx.obj['elbv2'],
-                             cluster, service, exit_on_complete=True)
 
 
 def run_group_deployment(ctx, cluster, service, tags, count, verbose):
@@ -52,8 +48,7 @@ def run_group_deployment(ctx, cluster, service, tags, count, verbose):
 
             for srv in services:
                 deploy_service(ctx, cluster, srv, tags, count, verbose)
-            utils.monitor_deployment(ctx.obj['ecs'], ctx.obj['elbv2'],
-                                     cluster, services, exit_on_complete=True)
+            return services
         else:
             click.echo('Error: Service group not in config file.')
     except KeyError:
