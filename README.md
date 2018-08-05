@@ -107,35 +107,23 @@ Once the cli triggers the deploy and gets to the auto-update screen we can cance
 
 ### Deploying - Examples
 ```bash
-# Example of deploying a new docker tag (verbose mode enabled)
-$ ecs service deploy cluster1 app1 tag-new-123 -v
-Current task definition for cluster1 app1: app1-task-def:123
-Found image: 123456789.dkr.ecr.us-east-1.amazonaws.com/app1:tag-new-123
-Registered new task definition: app1-task-def:124
-Deploying app1-task-def:124 to cluster1 app1...
+# Example of deploying a single service
+$ ecs service deploy cluster1 app1 tag-new-123
+Elapsed: 00:00:04
+InProgress  cluster1 app1          0/1  LB: [healthy: 1]
 
-Elapsed: 00:03:05
-cluster1 app1 deployments:
+Ctrl-C to quit the watcher. No deployments will be interrupted.
 
-PRIMARY  app1-task-def:124  desired: 2 running: 0 pending: 2  InProgress
-         - app1:tag-new-123
-PRIMARY  app1-task-def:123  desired: 2 running: 2 pending: 0  InProgress
-         - app1:tag
-
-Target Group: app1-tg  app1 443  healthy: 1 draining: 1
-
-2018-03-07 17:37:34-08:00 (service app1) has started 2 tasks: (task 9ac2a0c9-4d9a-49eb-9928-3149fc975bd1) (task 51b3d856-d63e-4066-b871-2d36e9cc63f5).
-2018-03-07 17:37:34-08:00 (service app1) has begun draining connections on 1 tasks.
-
-# Example of deploying a service group (verbose mode disabled)
+# Example of deploying a service group
 $ grep -B 1 app1 ~/.ecstools
 [service-group]
 app1 = app1 app1-worker1 app1-worker2
 $ ecs service deploy cluster1 app1 tag123 -g
 Elapsed: 00:00:04
 InProgress  cluster1 app1          0/1  LB: [healthy: 1]
-InProgress  cluster1 app1-worker1  0/1  LB: [n/a]
-InProgress  cluster1 app1-worker2  0/0  LB: [n/a]
+InProgress  cluster1 app1-worker1  0/1
+InProgress  cluster1 app1-worker2  0/0
+
 Ctrl-C to quit the watcher. No deployments will be interrupted.
 
 # To scale during a deployment pass `-c N`
