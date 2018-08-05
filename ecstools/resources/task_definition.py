@@ -37,6 +37,11 @@ class TaskDefinition(object):
     def containers(self):
         return self.td['containerDefinitions']
 
+    def find_container_by_name(self, name):
+        for container in self.containers():
+            if container['name'] == name:
+                return container
+
     def images(self):
         """Returns a list of image properties dicts"""
         return [self.image(x) for x in self.containers()]
@@ -44,16 +49,12 @@ class TaskDefinition(object):
     def image(self, container):
         """Returns an image properties dict"""
         if isinstance(container, str):
-            for c in self.containers():
-                if c['name'] == container:
-                    image = c['image']
-                    container_name = c['name']
+            container = self.find_container_by_name(container)
         elif isinstance(container, int):
-            image = self.containers()[container]['image']
-            container_name = self.containers()[container]['name']
-        else:
-            image = container['image']
-            container_name = container['name']
+            container = self.containers()[container]
+
+        image = container['image']
+        container_name = container['name']
         return {
             'container': container_name,
             'repo': self._image_repo(image),
