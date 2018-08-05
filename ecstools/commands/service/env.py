@@ -77,17 +77,20 @@ def container_selection(containers):
     if len(containers) > 1:
         for c in containers:
             click.echo('%s) %s' % (containers.index(c) + 1, c['name']))
-
-        try:
-            c = int(six.moves.input('#? '))
-            if int(c) not in range(1, len(containers) + 1):
-                raise ValueError()
-        except ValueError:
-            click.echo('Invalid input')
-            sys.exit(1)
-
-        return containers[(int(c) - 1)]
+        container_number = ask_container_number(containers)
+        return containers[(int(container_number) - 1)]
     return containers[0]
+
+
+def ask_container_number(containers):
+    try:
+        container_number = int(six.moves.input('#? '))
+        if int(container_number) not in range(1, len(containers) + 1):
+            raise ValueError()
+    except ValueError:
+        click.echo('Invalid input')
+        sys.exit(1)
+    return container_number
 
 
 def update_environment_variables(container, pairs, delete):
