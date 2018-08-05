@@ -54,21 +54,24 @@ def print_group_deployment_info(index, out, ecs, elbv2, srv, srv_len):
             'service': srv.name(),
             'runningCount': d['runningCount'],
             'desiredCount': d['desiredCount'],
-            'states': 'n/a',
             'pad': srv_len,
             'status': 'InProgress',
         }
         d_info['status'] = deployment_status(srv, d)
 
+        output_template = '{status:11} {cluster} {service:{pad}}  ' \
+            '{runningCount}/{desiredCount}'
+
         for lb in srv.load_balancers():
             if 'targetGroupArn' in lb:
                 tg_info = describe_target_group_info(elbv2, lb)
                 d_info = merge_two_dicts(d_info, tg_info)
+                output_template = '{status:11} {cluster} {service:{pad}}  ' \
+                    '{runningCount}/{desiredCount}  LB: [{states}]'
                 if not tg_info['healthy']:
                     d_info['status'] = 'InProgress'
 
-        out[next(index)] = '{status:11} {cluster} {service:{pad}}  ' \
-            '{runningCount}/{desiredCount}  LB: [{states}]'.format(**d_info)
+        out[next(index)] = output_template.format(**d_info)
 
     return d_info['status']
 
