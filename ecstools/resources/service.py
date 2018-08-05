@@ -54,12 +54,12 @@ class Service(object):
 
         td_dict = self.update_task_definition_images(tags)
         td = self.register_task_definition(td_dict, verbose)
-        self.deploy_task_definition(td.name(), verbose, count)
+        self.deploy_task_definition(td, verbose, count)
 
     def deploy_task_definition(self, taskDefinition, verbose, count=None):
         if verbose:
             click.secho('Deploying %s to %s %s...' % (
-                self.task_definition().revision(),
+                taskDefinition.revision(),
                 self.cluster(),
                 self.name()),
                 fg='blue'
@@ -67,7 +67,7 @@ class Service(object):
         params = {
             'cluster': self.cluster(),
             'service': self.name(),
-            'taskDefinition': self.task_definition().name(),
+            'taskDefinition': taskDefinition.revision(),
             'forceNewDeployment': True
         }
         if count:
@@ -159,7 +159,7 @@ class Service(object):
                 'The images are already in the current task definition.')
             click.secho(('Forcing a new deployment of %s' %
                          self.task_definition().revision()), fg='white')
-        self.deploy_task_definition(self.task_definition().revision(),
+        self.deploy_task_definition(self.task_definition(),
                                     verbose, count)
 
     def _are_images_in_current_task_definition(self, tags):
