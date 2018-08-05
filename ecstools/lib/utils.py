@@ -29,22 +29,28 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
             out[next(index)] = 'Elapsed: {}'.format(elapsed)
 
             if gmt.tm_sec % interval == 0:
-                statuses = {}
-                for service in services:
-                    srv = Service(ecs, None, cluster, service)
-                    status = print_group_deployment_info(
-                        index, out, ecs, elbv2, srv, srv_len)
-                    statuses[service] = status
-
-                out[next(index)] = '\n'
-                out[next(index)] = 'Ctrl-C to quit the watcher.' \
-                    ' No deployments will be interrupted.'
-
-                if exit_on_complete:
-                    check_for_completion(index, out, statuses)
-
-                del srv
+                print_deployment_info(index, out, ecs, elbv2, cluster,
+                                      services, srv_len, exit_on_complete)
             time.sleep(1)
+
+
+def print_deployment_info(index, out, ecs, elbv2, cluster, services,
+                          srv_len, exit_on_complete):
+    statuses = {}
+    for service in services:
+        srv = Service(ecs, None, cluster, service)
+        status = print_group_deployment_info(
+            index, out, ecs, elbv2, srv, srv_len)
+        statuses[service] = status
+
+    out[next(index)] = '\n'
+    out[next(index)] = 'Ctrl-C to quit the watcher.' \
+        ' No deployments will be interrupted.'
+
+    if exit_on_complete:
+        check_for_completion(index, out, statuses)
+
+    del srv
 
 
 def print_group_deployment_info(index, out, ecs, elbv2, srv, srv_len):
