@@ -93,8 +93,7 @@ class TestService(object):
         assert 'production app1  0/1' in result.output
 
     def test_service_deploy_the_same_tag_to_group(self, runner, mocker):
-        mocked_exit = mocker.patch(
-            'ecstools.lib.utils.deployment_completed')
+        mocked_exit = mocker.patch('ecstools.lib.utils.deployment_completed')
         mocked_exit.side_effect = True
         result = runner.invoke(
             main.cli,
