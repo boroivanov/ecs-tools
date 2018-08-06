@@ -51,6 +51,7 @@ def run_group_deployment(ctx, cluster, service, tags, count, verbose):
             return services
         else:
             click.echo('Error: Service group not in config file.')
+            sys.exit(1)
     except KeyError:
         click.echo('Error: Section "service-group" not in config file.')
         sys.exit(1)
