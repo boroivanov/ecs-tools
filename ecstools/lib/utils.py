@@ -47,8 +47,8 @@ def print_deployment_info(index, out, ecs, elbv2, cluster, services,
     out[next(index)] = 'Ctrl-C to quit the watcher.' \
         ' No deployments will be interrupted.'
 
-    if exit_on_complete:
-        check_for_completion(index, out, statuses)
+    if deployment_completed(index, out, statuses, exit_on_complete):
+        sys.exit(0)
 
     del srv
 
@@ -132,10 +132,12 @@ def get_elapsed_time(start_time):
     return gmt, elapsed
 
 
-def check_for_completion(index, out, statuses):
-    if all([x == 'Completed' for x in statuses.values()]):
-        out[next(index)] = 'All deployments completed.'
-        sys.exit(0)
+def deployment_completed(index, out, statuses, exit_on_complete):
+    if exit_on_complete:
+        if all([x == 'Completed' for x in statuses.values()]):
+            out[next(index)] = 'All deployments completed.'
+            return True
+    return False
 
 
 def merge_two_dicts(x, y):

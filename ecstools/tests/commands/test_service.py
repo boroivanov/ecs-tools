@@ -89,40 +89,46 @@ class TestService(object):
     #     )
     #     assert result.exit_code == 0
 
-    # TODO: moto doesn't spin up running containers
-    # def test_service_top(self, runner):
-    #     result = runner.invoke(
-    #         main.cli,
-    #         ['service', 'top', 'production', 'app1', '-e']
-    #     )
-    #     assert result.exit_code == 0
+    def test_service_top(self, runner, mocker):
+        mocked_exit = mocker.patch('ecstools.lib.utils.deployment_completed')
+        mocked_exit.side_effect = True
+        result = runner.invoke(
+            main.cli,
+            ['service', 'top', 'production', 'app1', '-e']
+        )
+        assert 'Elapsed:' in result.output
+        assert 'production app1  0/1' in result.output
 
-    # TODO: moto doesn't spin up running containers
-    # def test_service_top_group(self, runner):
-    #     result = runner.invoke(
-    #         main.cli,
-    #         ['service', 'top', 'production', 'pytest-group', '-ge']
-    #     )
-    #     assert result.exit_code == 0
+    def test_service_top_group(self, runner, mocker):
+        mocked_exit = mocker.patch('ecstools.lib.utils.deployment_completed')
+        mocked_exit.side_effect = True
+        result = runner.invoke(
+            main.cli,
+            ['service', 'top', 'production', 'pytest-group', '-ge']
+        )
+        assert 'Elapsed:' in result.output
+        assert 'production app1  0/1' in result.output
+        assert 'production app2  0/1' in result.output
 
-    # TODO: moto doesn't spin up running containers
-    # def test_service_top_group_nonexistent(self, runner):
+    def test_service_top_group_nonexistent(self, runner):
+        result = runner.invoke(
+            main.cli,
+            ['service', 'top', 'production', 'nonexistent', '-ge']
+        )
+        assert result.exit_code == 1
+        expected = 'Error: Service group not in config file.\n'
+        assert result.output == expected
+
+    # TODO: Fix
+    # def test_service_top_group_bad_config(self, runner, mocker):
+    #     mocked_local_config = mocker.patch('ecstools.lib.config.config')
+    #     mocked_local_config.side_effect = []
     #     result = runner.invoke(
     #         main.cli,
-    #         ['service', 'top', 'production', 'nonexistent', '-ge']
+    #         ['service', 'top', 'production', 'bad-config', '-ge']
     #     )
     #     assert result.exit_code == 1
-    #     expected = 'Error: Service group not in config file.\n'
-    #     assert result.output == expected
-
-    # TODO: test without .ecstools config
-    # def test_service_top_group_bad_config(self, runner):
-    #     result = runner.invoke(
-    #         main.cli,
-    #         ['service', 'top', 'production', 'nonexistent', '-ge']
-    #     )
-    #     assert result.exit_code == 1
-    #     expected = 'Error: Section "service-config" not in config file.\n'
+    #     expected = 'Error: Section "service-group" not in config file.\n'
     #     assert result.output == expected
 
     # TODO: moto list_task_definitions not implemented functionality
