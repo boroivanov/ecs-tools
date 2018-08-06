@@ -25,7 +25,7 @@ def top(ctx, cluster, service, group, exit_on_complete):
                 click.echo('Error: Service group not in config file.')
                 sys.exit(1)
     except KeyError:
-        click.echo('Error: Section "service-config" not in config file.')
+        click.echo('Error: Section "service-group" not in config file.')
         sys.exit(1)
 
     utils.monitor_deployment(ecs, elbv2, cluster, service,

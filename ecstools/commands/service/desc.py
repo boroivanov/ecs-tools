@@ -27,7 +27,7 @@ def print_service_general_info(srv):
         srv.cluster(),
         srv.name(),
         srv.task_definition().revision(),
-        srv.service()['launchType']
+        srv.launch_type()
     )
     counts = (
         srv.service()['desiredCount'],

@@ -81,54 +81,115 @@ class TestService(object):
         expected = 'No updates'
         assert expected in result.output
 
-    # TODO: moto doesn't spin up running containers
-    # def test_service_scale(self, runner):
-    #     result = runner.invoke(
-    #         main.cli,
-    #         ['service', 'scale', 'production', 'app1', '1']
-    #     )
-    #     assert result.exit_code == 0
+    def test_service_deploy_the_same_tag(self, runner, mocker):
+        mocked_exit = mocker.patch(
+            'ecstools.lib.utils.deployment_completed')
+        mocked_exit.side_effect = True
+        result = runner.invoke(
+            main.cli,
+            ['service', 'deploy', 'production', 'app1', 'v0.1']
+        )
+        assert 'Elapsed:' in result.output
+        assert 'production app1  0/1' in result.output
 
-    # TODO: moto doesn't spin up running containers
-    # def test_service_top(self, runner):
-    #     result = runner.invoke(
-    #         main.cli,
-    #         ['service', 'top', 'production', 'app1', '-e']
-    #     )
-    #     assert result.exit_code == 0
+    def test_service_deploy_the_same_tag_to_group(self, runner, mocker):
+        mocked_exit = mocker.patch('ecstools.lib.utils.deployment_completed')
+        mocked_exit.side_effect = True
+        result = runner.invoke(
+            main.cli,
+            ['service', 'deploy', 'production', 'pytest-group', 'v0.1', '-g']
+        )
+        assert 'Elapsed:' in result.output
+        assert 'production app1  0/1' in result.output
+        assert 'production app2  0/1' in result.output
 
-    # TODO: moto doesn't spin up running containers
-    # def test_service_top_group(self, runner):
-    #     result = runner.invoke(
-    #         main.cli,
-    #         ['service', 'top', 'production', 'pytest-group', '-ge']
-    #     )
-    #     assert result.exit_code == 0
+    def test_service_deploy_the_same_tag_to_bad_group(self, runner, mocker):
+        result = runner.invoke(
+            main.cli,
+            ['service', 'deploy', 'production', 'bad-group', 'v0.1', '-g']
+        )
+        assert result.exit_code == 1
+        expected = 'Error: Service group not in config file.\n'
+        assert result.output == expected
 
-    # TODO: moto doesn't spin up running containers
-    # def test_service_top_group_nonexistent(self, runner):
+    # TODO: Create moto ecr to validate the new tag
+    # def test_service_deploy_new_tag(self, runner, mocker):
+    #     mocked_exit = mocker.patch(
+    #         'ecstools.lib.utils.deployment_completed')
+    #     mocked_exit.side_effect = True
     #     result = runner.invoke(
     #         main.cli,
-    #         ['service', 'top', 'production', 'nonexistent', '-ge']
+    #         ['service', 'deploy', 'production', 'app1', 'new_tag']
+    #     )
+    #     assert 'Elapsed:' in result.output
+    #     assert 'production app1  0/1' in result.output
+
+    def test_service_deploy_no_tags(self, runner):
+        result = runner.invoke(
+            main.cli,
+            ['service', 'deploy', 'production', 'app1']
+        )
+        expected = 'Error: Specify one or more tags to be deployed.\n'
+        assert result.exit_code == 1
+        assert result.output == expected
+
+    def test_service_desc(self, runner, mocker):
+        mocked_net_config = mocker.patch(
+            'ecstools.commands.service.desc.print_service_network_info')
+        mocked_net_config.side_effect = None
+        result = runner.invoke(main.cli, ['desc', 'production', 'app1'])
+        assert 'production app1 production-app1:3' in result.output
+        assert 'Desired: 1 Running: 0 Pending: 0' in result.output
+        assert 'Container:        app1 @ app1:v0.1' in result.output
+
+    def test_service_scale(self, runner, mocker):
+        mocked_exit = mocker.patch('ecstools.lib.utils.deployment_completed')
+        mocked_exit.side_effect = True
+        result = runner.invoke(
+            main.cli,
+            ['service', 'scale', 'production', 'app1', '1']
+        )
+        assert 'Elapsed:' in result.output
+        assert 'production app1  0/1' in result.output
+
+    def test_service_top(self, runner, mocker):
+        mocked_exit = mocker.patch('ecstools.lib.utils.deployment_completed')
+        mocked_exit.side_effect = True
+        result = runner.invoke(
+            main.cli,
+            ['service', 'top', 'production', 'app1', '-e']
+        )
+        assert 'Elapsed:' in result.output
+        assert 'production app1  0/1' in result.output
+
+    def test_service_top_group(self, runner, mocker):
+        mocked_exit = mocker.patch('ecstools.lib.utils.deployment_completed')
+        mocked_exit.side_effect = True
+        result = runner.invoke(
+            main.cli,
+            ['service', 'top', 'production', 'pytest-group', '-ge']
+        )
+        assert 'Elapsed:' in result.output
+        assert 'production app1  0/1' in result.output
+        assert 'production app2  0/1' in result.output
+
+    def test_service_top_group_nonexistent(self, runner):
+        result = runner.invoke(
+            main.cli,
+            ['service', 'top', 'production', 'nonexistent', '-ge']
+        )
+        assert result.exit_code == 1
+        expected = 'Error: Service group not in config file.\n'
+        assert result.output == expected
+
+    # TODO: Fix
+    # def test_service_top_group_bad_config(self, runner, mocker):
+    #     mocked_local_config = mocker.patch('ecstools.lib.config.config')
+    #     mocked_local_config.side_effect = []
+    #     result = runner.invoke(
+    #         main.cli,
+    #         ['service', 'top', 'production', 'bad-config', '-ge']
     #     )
     #     assert result.exit_code == 1
-    #     expected = 'Error: Service group not in config file.\n'
+    #     expected = 'Error: Section "service-group" not in config file.\n'
     #     assert result.output == expected
-
-    # TODO: test without .ecstools config
-    # def test_service_top_group_bad_config(self, runner):
-    #     result = runner.invoke(
-    #         main.cli,
-    #         ['service', 'top', 'production', 'nonexistent', '-ge']
-    #     )
-    #     assert result.exit_code == 1
-    #     expected = 'Error: Section "service-config" not in config file.\n'
-    #     assert result.output == expected
-
-    # TODO: moto list_task_definitions not implemented functionality
-    # def test_service_desc(self, runner):
-    #     result = runner.invoke(
-    #         main.cli,
-    #         ['service', 'desc', 'production', 'app1']
-    #     )
-    #     assert result.exit_code == 0

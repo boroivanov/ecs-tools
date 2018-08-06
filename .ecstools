@@ -15,4 +15,4 @@ dp = service deploy production app1 -g
 
 [service-group]
 app1 = app1 app1-worker1 app1-worker2
-pytest-group = app1 app2 worker1
+pytest-group = app1 app2
