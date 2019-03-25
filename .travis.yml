@@ -7,10 +7,21 @@ notifications:
 
 install:
   - pip install tox-travis
+  - pip install -r requirements-test.txt
   - mkdir ~/.aws
   - printf "[default]\nregion = us-east-1\n[profile no-region]" > ~/.aws/config
 
-script: tox
+before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
+
+script:
+  - python -m pytest --cov-report term-missing --cov ecstools
+  - python -m flake8 ecstools
+
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 
 deploy:
   provider: pypi
