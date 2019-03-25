@@ -11,6 +11,8 @@ and update environment variables.
 ```bash
 pip install ecstools
 ```
+*NOTE: Python 2 is not supported as of version 0.1.7*
+
 # Usage
 
 ## Config File
