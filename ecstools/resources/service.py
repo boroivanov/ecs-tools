@@ -32,10 +32,7 @@ class Service(object):
         return self._service['loadBalancers']
 
     def launch_type(self):
-        launchType = ''
-        if 'launchType' in self._service:
-            launchType = self._service['launchType']
-        return launchType
+        return self._service.get('launchType', '')
 
     def events(self, number):
         return self._service['events'][:number]
