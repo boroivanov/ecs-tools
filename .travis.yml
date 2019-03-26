@@ -19,7 +19,7 @@ before_script:
   - ./cc-test-reporter before-build
 
 script:
-  - python -m pytest --cov-report term-missing --cov ecstools --cov-report annotate:cov_annotate
+  - python -m pytest --cov-report term-missing --cov ecstools --cov-report xml
   # - python -m flake8 ecstools
 
 after_script:
