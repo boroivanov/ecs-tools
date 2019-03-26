@@ -20,7 +20,7 @@ before_script:
 
 script:
   - python -m pytest --cov-report term-missing --cov ecstools
-  - python -m flake8 ecstools
+  # - python -m flake8 ecstools
 
 after_script:
   - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
