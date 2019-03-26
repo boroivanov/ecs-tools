@@ -10,8 +10,10 @@ install:
   - pip install -r requirements-test.txt
   - mkdir ~/.aws
   - printf "[default]\nregion = us-east-1\n[profile no-region]" > ~/.aws/config
+  - printf "[default]\naws_access_key_id=XXXXXXXXXXXXXX\naws_secret_access_key=YYYYYYYYYYYYYYYYYYYYYYYYYYY\n" > ~/.aws/credentials
 
 before_script:
+  - sudo rm -f /etc/boto.cfg # https://github.com/travis-ci/travis-ci/issues/7940#issuecomment-310759657
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
   - ./cc-test-reporter before-build
