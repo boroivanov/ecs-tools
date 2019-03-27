@@ -57,7 +57,8 @@ def print_deployment_info(index, scr, ecs, elbv2, cluster, services,
         scr.addstr(next(index), 0, '')
 
         e = srv.events(1)[0]
-        scr.addstr(next(index), 4, f'{e["createdAt"]} {e["message"]}',
+        date = e['createdAt'].replace(microsecond=0)
+        scr.addstr(next(index), 4, f'{date} {e["message"]}',
                    curses.A_DIM)
         scr.addstr(next(index), 0, '')
         scr.addstr(next(index), 0, '')
