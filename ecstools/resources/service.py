@@ -25,6 +25,15 @@ class Service(object):
     def cluster(self):
         return self._cluster
 
+    def desired_count(self):
+        return self._service['desiredCount']
+
+    def running_count(self):
+        return self._service['runningCount']
+
+    def pending_count(self):
+        return self._service['pendingCount']
+
     def deployments(self):
         return self._service['deployments']
 

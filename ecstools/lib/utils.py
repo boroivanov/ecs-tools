@@ -23,6 +23,7 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
         services = [services]
 
     scr = curses.initscr()
+    curses.start_color()
     curses.noecho()
     curses.cbreak()
 
@@ -32,11 +33,12 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
             gmt, elapsed = get_elapsed_time(start_time)
 
             scr.addstr(next(index), 0, f'Elapsed: {elapsed}')
-            if gmt.tm_sec % interval == 0:
-                scr.addstr(next(index), 0, '\n')
-                print_deployment_info(index, scr, ecs, elbv2, cluster,
-                                      services, srv_len, exit_on_complete)
+            scr.addstr(next(index), 0, '')
+
+            print_deployment_info(index, scr, ecs, elbv2, cluster,
+                                  services, srv_len, exit_on_complete)
             scr.refresh()
+            scr.clear()
             time.sleep(1)
     finally:
         curses.echo()
@@ -46,53 +48,48 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
 
 def print_deployment_info(index, scr, ecs, elbv2, cluster, services,
                           srv_len, exit_on_complete):
-    statuses = {}
     for service in services:
         srv = Service(ecs, None, cluster, service)
-        status = print_group_deployment_info(
-            index, scr, ecs, elbv2, srv, srv_len)
-        statuses[service] = status
+        tg = get_load_balancer_info(elbv2, srv)
+
+        print_service_info(index, scr, srv, tg)
+        print_group_deployment_info(index, scr, srv)
+        scr.addstr(next(index), 0, '')
+
+        e = srv.events(1)[0]
+        scr.addstr(next(index), 4, f'{e["createdAt"]} {e["message"]}',
+                   curses.A_DIM)
+        scr.addstr(next(index), 0, '')
+        scr.addstr(next(index), 0, '')
 
     scr.addstr(next(index), 0, f'\nCtrl-C to quit the watcher.'
                ' No deployments will be interrupted.')
 
-    if deployment_completed(index, scr, statuses, exit_on_complete):
-        sys.exit(0)
-
     del srv
 
 
-def print_group_deployment_info(index, scr, ecs, elbv2, srv, srv_len):
-    for d in srv.deployments()[:1]:
-        d_info = {
-            'cluster': srv.cluster(),
-            'service': srv.name(),
-            'runningCount': d['runningCount'],
-            'desiredCount': d['desiredCount'],
-            'pad': srv_len,
-            'status': 'InProgress',
-        }
-        output_template = '{status:11} {cluster} {service:{pad}}  ' \
-            '{runningCount}/{desiredCount}'
+def print_service_info(index, scr, srv, tg):
+    tg_states = ''
+    if tg is not None:
+        tg_states = f'  Load Balancer: {tg["states"]}'
 
-        d_info['status'] = deployment_status(srv, d)
-        d_info, output_template = print_load_balancer_info(elbv2, srv, d_info,
-                                                           output_template)
-        scr.addstr(next(index), 0, output_template.format(**d_info))
-
-    return d_info['status']
+    scr.addstr(next(index), 0, f'{srv.cluster()} {srv.name()}'
+               f'  {srv.running_count()}/{srv.desired_count()}{tg_states}',
+               curses.A_BOLD)
 
 
-def print_load_balancer_info(elbv2, srv, d_info, output_template):
+def print_group_deployment_info(index, scr, srv):
+    for d in srv.deployments():
+        scr.addstr(next(index), 4, f'{d["id"]} Running: {d["runningCount"]}'
+                   f' Desired: {d["desiredCount"]}'
+                   f' Pending: {d["pendingCount"]}', curses.A_LOW)
+
+
+def get_load_balancer_info(elbv2, srv):
     for lb in srv.load_balancers():
         if 'targetGroupArn' in lb:
-            tg_info = describe_target_group_info(elbv2, lb)
-            d_info = merge_two_dicts(d_info, tg_info)
-            output_template = '{status:11} {cluster} {service:{pad}}  ' \
-                '{runningCount}/{desiredCount}  LB: [{states}]'
-            if not tg_info['healthy']:
-                d_info['status'] = 'InProgress'
-    return d_info, output_template
+            return describe_target_group_info(elbv2, lb)
+    return None
 
 
 def describe_target_group_info(elbv2, lb):
