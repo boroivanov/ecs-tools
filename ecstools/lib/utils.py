@@ -30,7 +30,8 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
             index = index_generator()
             gmt, elapsed = get_elapsed_time(start_time)
 
-            scr.addstr(next(index), 0, f'Elapsed: {elapsed}')
+            scr.addstr(next(index), 0, f'Elapsed: {elapsed}'
+                       f'  Exit on Complete: {exit_on_complete}')
             scr.addstr(next(index), 0, '')
 
             print_deployment_info(index, scr, ecs, elbv2, cluster,
@@ -48,12 +49,14 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
 
 def print_deployment_info(index, scr, ecs, elbv2, cluster, services,
                           exit_on_complete):
+    statuses = {}
     for service in services:
         srv = Service(ecs, None, cluster, service)
         tg = get_load_balancer_info(elbv2, srv)
 
         print_service_info(index, scr, srv, tg)
-        print_group_deployment_info(index, scr, srv)
+        status = print_group_deployment_info(index, scr, srv)
+        statuses[service] = status
         scr.addstr(next(index), 0, '')
 
         e = srv.events(1)[0]
@@ -68,11 +71,14 @@ def print_deployment_info(index, scr, ecs, elbv2, cluster, services,
 
     del srv
 
+    if deployment_completed(index, scr, statuses, exit_on_complete):
+        sys.exit('All deployments completed.')
+
 
 def print_service_info(index, scr, srv, tg):
     tg_states = ''
     if tg is not None:
-        tg_states = f'  Load Balancer: {tg["states"]}'
+        tg_states = f'  Load Balancer: [ {tg["states"]} ]'
 
     scr.addstr(next(index), 0, f'{srv.cluster()} {srv.name()}'
                f'  {srv.running_count()}/{srv.desired_count()}{tg_states}',
@@ -84,6 +90,7 @@ def print_group_deployment_info(index, scr, srv):
         scr.addstr(next(index), 4, f'{d["id"]} Running: {d["runningCount"]}'
                    f' Desired: {d["desiredCount"]}'
                    f' Pending: {d["pendingCount"]}', curses.A_LOW)
+    return deployment_status(srv, d)
 
 
 def get_load_balancer_info(elbv2, srv):
@@ -142,7 +149,8 @@ def get_elapsed_time(start_time):
 def deployment_completed(index, scr, statuses, exit_on_complete):
     if exit_on_complete:
         if all([x == 'Completed' for x in statuses.values()]):
-            scr.addstr(next(index), 0, 'All deployments completed.')
+            scr.addstr(next(index), 0, 'All deployments completed.',
+                       curses.A_STANDOUT)
             return True
     return False
 
