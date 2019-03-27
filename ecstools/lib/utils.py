@@ -38,6 +38,8 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
             scr.refresh()
             scr.clear()
             time.sleep(1)
+    except KeyboardInterrupt:
+        sys.exit(0)
     finally:
         curses.echo()
         curses.nocbreak()
