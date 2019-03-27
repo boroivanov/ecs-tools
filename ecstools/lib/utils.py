@@ -17,13 +17,11 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
     """
     Reprint service and deployments info
     """
-    srv_len = len(max(services, key=len))
     start_time = time.time()
     if not isinstance(services, list):
         services = [services]
 
     scr = curses.initscr()
-    curses.start_color()
     curses.noecho()
     curses.cbreak()
 
@@ -36,7 +34,7 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
             scr.addstr(next(index), 0, '')
 
             print_deployment_info(index, scr, ecs, elbv2, cluster,
-                                  services, srv_len, exit_on_complete)
+                                  services, exit_on_complete)
             scr.refresh()
             scr.clear()
             time.sleep(1)
@@ -47,7 +45,7 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
 
 
 def print_deployment_info(index, scr, ecs, elbv2, cluster, services,
-                          srv_len, exit_on_complete):
+                          exit_on_complete):
     for service in services:
         srv = Service(ecs, None, cluster, service)
         tg = get_load_balancer_info(elbv2, srv)
