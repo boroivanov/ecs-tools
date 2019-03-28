@@ -3,6 +3,7 @@ import time
 import curses
 
 from ecstools.resources.service import Service
+from ecstools.resources.task_definition import TaskDefinition
 
 
 def index_generator():
@@ -55,7 +56,7 @@ def print_deployment_info(index, scr, ecs, elbv2, cluster, services,
         tg = get_load_balancer_info(elbv2, srv)
 
         print_service_info(index, scr, srv, tg)
-        status = print_group_deployment_info(index, scr, srv)
+        status = print_group_deployment_info(ecs, index, scr, srv)
         statuses[service] = status
         scr.addstr(next(index), 0, '')
 
@@ -85,11 +86,18 @@ def print_service_info(index, scr, srv, tg):
                curses.A_BOLD)
 
 
-def print_group_deployment_info(index, scr, srv):
+def print_group_deployment_info(ecs, index, scr, srv):
     for d in srv.deployments():
         scr.addstr(next(index), 4, f'{d["id"]} Running: {d["runningCount"]}'
                    f' Desired: {d["desiredCount"]}'
                    f' Pending: {d["pendingCount"]}', curses.A_LOW)
+
+        td = TaskDefinition(ecs, d['taskDefinition'])
+        for image in td.images():
+            # del image['repo']
+            # scr.addstr(next(index), 8, f'- {image}')
+            scr.addstr(next(index), 8, f'- CONTAINER: {image["container"]}'
+                       f' IMAGE: {image["image"]} TAG: {image["tag"]}')
     return deployment_status(srv, d)
 
 
