@@ -2,8 +2,18 @@ import sys
 import time
 import curses
 
+from ecstools.main import version
 from ecstools.resources.service import Service
 from ecstools.resources.task_definition import TaskDefinition
+
+
+COLOR_MAP = {
+    'NO_COLOR': 0,
+    'BLUE': 1,
+    'GREEN': 2,
+    'RED': 3,
+    'YELLOW': 4,
+}
 
 
 def index_generator():
@@ -11,6 +21,16 @@ def index_generator():
     while True:
         yield i
         i = i + 1
+
+
+def init_curses_colors():
+    curses.start_color()
+    curses.use_default_colors()
+    curses.init_pair(COLOR_MAP['NO_COLOR'], -1, -1)
+    curses.init_pair(COLOR_MAP['BLUE'], curses.COLOR_BLUE, -1)
+    curses.init_pair(COLOR_MAP['GREEN'], curses.COLOR_GREEN, -1)
+    curses.init_pair(COLOR_MAP['RED'], curses.COLOR_RED, -1)
+    curses.init_pair(COLOR_MAP['YELLOW'], curses.COLOR_YELLOW, -1)
 
 
 def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
@@ -25,14 +45,17 @@ def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
     scr = curses.initscr()
     curses.noecho()
     curses.cbreak()
+    init_curses_colors()
 
     try:
         while True:
             index = index_generator()
             gmt, elapsed = get_elapsed_time(start_time)
 
-            scr.addstr(next(index), 0, f'Elapsed: {elapsed}'
+            header = next(index)
+            scr.addstr(header, 0, f'Elapsed: {elapsed}'
                        f'  Exit on Complete: {exit_on_complete}')
+            scr.addstr(header, curses.COLS-14, f'version {version}')
             scr.addstr(next(index), 0, '')
 
             print_deployment_info(index, scr, ecs, elbv2, cluster,
@@ -78,19 +101,36 @@ def print_deployment_info(index, scr, ecs, elbv2, cluster, services,
 
 def print_service_info(index, scr, srv, tg):
     tg_states = ''
+    lb_states_color = COLOR_MAP['NO_COLOR']
     if tg is not None:
         tg_states = f'  Load Balancer: [ {tg["states"]} ]'
 
-    scr.addstr(next(index), 0, f'{srv.cluster()} {srv.name()}'
-               f'  {srv.running_count()}/{srv.desired_count()}{tg_states}',
-               curses.A_BOLD)
+        if 'draining' in tg_states or 'initial' in tg_states:
+            lb_states_color = COLOR_MAP['YELLOW']
+        elif 'unhealthy' in tg_states:
+            lb_states_color = COLOR_MAP['RED']
+
+    srv_info = f'{srv.cluster()} {srv.name()}  {srv.running_count()}/' \
+        f'{srv.desired_count()}'
+
+    line = next(index)
+    scr.addstr(line, 0, srv_info, curses.A_BOLD)
+    scr.addstr(line, len(srv_info)+1, tg_states,
+               curses.color_pair(lb_states_color))
 
 
 def print_group_deployment_info(ecs, index, scr, srv):
     for d in srv.deployments():
-        scr.addstr(next(index), 4, f'{d["id"]} Running: {d["runningCount"]}'
+        color = COLOR_MAP['GREEN']
+        status = 'Completed '
+        if d['runningCount'] < d['desiredCount']:
+            color = COLOR_MAP['YELLOW']
+            status = 'InProgress'
+
+        scr.addstr(next(index), 4, f'{status} {d["id"]}'
+                   f' Running: {d["runningCount"]}'
                    f' Desired: {d["desiredCount"]}'
-                   f' Pending: {d["pendingCount"]}', curses.A_LOW)
+                   f' Pending: {d["pendingCount"]}', curses.color_pair(color))
 
         td = TaskDefinition(ecs, d['taskDefinition'])
         for image in td.images():
