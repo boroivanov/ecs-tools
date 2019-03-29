@@ -1,8 +1,19 @@
 import sys
 import time
-from reprint import output
+import curses
 
+from ecstools.main import version
 from ecstools.resources.service import Service
+from ecstools.resources.task_definition import TaskDefinition
+
+
+COLOR_MAP = {
+    'NO_COLOR': 0,
+    'BLUE': 1,
+    'GREEN': 2,
+    'RED': 3,
+    'YELLOW': 4,
+}
 
 
 def index_generator():
@@ -12,78 +23,129 @@ def index_generator():
         i = i + 1
 
 
+def init_curses_colors():
+    curses.start_color()
+    curses.use_default_colors()
+    curses.init_pair(COLOR_MAP['NO_COLOR'], -1, -1)
+    curses.init_pair(COLOR_MAP['BLUE'], curses.COLOR_BLUE, -1)
+    curses.init_pair(COLOR_MAP['GREEN'], curses.COLOR_GREEN, -1)
+    curses.init_pair(COLOR_MAP['RED'], curses.COLOR_RED, -1)
+    curses.init_pair(COLOR_MAP['YELLOW'], curses.COLOR_YELLOW, -1)
+
+
 def monitor_deployment(ecs, elbv2, cluster, services, interval=5,
                        exit_on_complete=False):
     """
     Reprint service and deployments info
     """
-    srv_len = len(max(services, key=len))
     start_time = time.time()
     if not isinstance(services, list):
         services = [services]
 
-    with output(initial_len=20, interval=0) as out:
+    scr = curses.initscr()
+    curses.noecho()
+    curses.cbreak()
+    init_curses_colors()
+
+    try:
         while True:
             index = index_generator()
             gmt, elapsed = get_elapsed_time(start_time)
-            out[next(index)] = 'Elapsed: {}'.format(elapsed)
 
-            if gmt.tm_sec % interval == 0:
-                print_deployment_info(index, out, ecs, elbv2, cluster,
-                                      services, srv_len, exit_on_complete)
+            header = next(index)
+            scr.addstr(header, 0, f'Elapsed: {elapsed}'
+                       f'  Exit on Complete: {exit_on_complete}')
+            scr.addstr(header, curses.COLS-14, f'version {version}')
+            scr.addstr(next(index), 0, '')
+
+            print_deployment_info(index, scr, ecs, elbv2, cluster,
+                                  services, exit_on_complete)
+            scr.refresh()
+            scr.clear()
             time.sleep(1)
+    except KeyboardInterrupt:
+        sys.exit(0)
+    finally:
+        curses.echo()
+        curses.nocbreak()
+        curses.endwin()
 
 
-def print_deployment_info(index, out, ecs, elbv2, cluster, services,
-                          srv_len, exit_on_complete):
+def print_deployment_info(index, scr, ecs, elbv2, cluster, services,
+                          exit_on_complete):
     statuses = {}
     for service in services:
         srv = Service(ecs, None, cluster, service)
-        status = print_group_deployment_info(
-            index, out, ecs, elbv2, srv, srv_len)
+        tg = get_load_balancer_info(elbv2, srv)
+
+        print_service_info(index, scr, srv, tg)
+        status = print_group_deployment_info(ecs, index, scr, srv)
         statuses[service] = status
+        scr.addstr(next(index), 0, '')
 
-    out[next(index)] = '\n'
-    out[next(index)] = 'Ctrl-C to quit the watcher.' \
-        ' No deployments will be interrupted.'
+        e = srv.events(1)[0]
+        date = e['createdAt'].replace(microsecond=0)
+        scr.addstr(next(index), 4, f'{date} {e["message"]}',
+                   curses.A_DIM)
+        scr.addstr(next(index), 0, '')
+        scr.addstr(next(index), 0, '')
 
-    if deployment_completed(index, out, statuses, exit_on_complete):
-        sys.exit(0)
+    scr.addstr(next(index), 0, f'\nCtrl-C to quit the watcher.'
+               ' No deployments will be interrupted.')
 
     del srv
 
-
-def print_group_deployment_info(index, out, ecs, elbv2, srv, srv_len):
-    for d in srv.deployments()[:1]:
-        d_info = {
-            'cluster': srv.cluster(),
-            'service': srv.name(),
-            'runningCount': d['runningCount'],
-            'desiredCount': d['desiredCount'],
-            'pad': srv_len,
-            'status': 'InProgress',
-        }
-        output_template = '{status:11} {cluster} {service:{pad}}  ' \
-            '{runningCount}/{desiredCount}'
-
-        d_info['status'] = deployment_status(srv, d)
-        d_info, output_template = print_load_balancer_info(elbv2, srv, d_info,
-                                                           output_template)
-        out[next(index)] = output_template.format(**d_info)
-
-    return d_info['status']
+    if deployment_completed(index, scr, statuses, exit_on_complete):
+        sys.exit('All deployments completed.')
 
 
-def print_load_balancer_info(elbv2, srv, d_info, output_template):
+def print_service_info(index, scr, srv, tg):
+    tg_states = ''
+    lb_states_color = COLOR_MAP['NO_COLOR']
+    if tg is not None:
+        tg_states = f'  Load Balancer: [ {tg["states"]} ]'
+
+        if 'draining' in tg_states or 'initial' in tg_states:
+            lb_states_color = COLOR_MAP['YELLOW']
+        elif 'unhealthy' in tg_states:
+            lb_states_color = COLOR_MAP['RED']
+
+    srv_info = f'{srv.cluster()} {srv.name()}  {srv.running_count()}/' \
+        f'{srv.desired_count()}'
+
+    line = next(index)
+    scr.addstr(line, 0, srv_info, curses.A_BOLD)
+    scr.addstr(line, len(srv_info)+1, tg_states,
+               curses.color_pair(lb_states_color))
+
+
+def print_group_deployment_info(ecs, index, scr, srv):
+    for d in srv.deployments():
+        color = COLOR_MAP['GREEN']
+        status = 'Completed '
+        if d['runningCount'] < d['desiredCount']:
+            color = COLOR_MAP['YELLOW']
+            status = 'InProgress'
+
+        scr.addstr(next(index), 4, f'{status} {d["id"]}'
+                   f' Running: {d["runningCount"]}'
+                   f' Desired: {d["desiredCount"]}'
+                   f' Pending: {d["pendingCount"]}', curses.color_pair(color))
+
+        td = TaskDefinition(ecs, d['taskDefinition'])
+        for image in td.images():
+            # del image['repo']
+            # scr.addstr(next(index), 8, f'- {image}')
+            scr.addstr(next(index), 8, f'- CONTAINER: {image["container"]}'
+                       f' IMAGE: {image["image"]} TAG: {image["tag"]}')
+    return deployment_status(srv, d)
+
+
+def get_load_balancer_info(elbv2, srv):
     for lb in srv.load_balancers():
         if 'targetGroupArn' in lb:
-            tg_info = describe_target_group_info(elbv2, lb)
-            d_info = merge_two_dicts(d_info, tg_info)
-            output_template = '{status:11} {cluster} {service:{pad}}  ' \
-                '{runningCount}/{desiredCount}  LB: [{states}]'
-            if not tg_info['healthy']:
-                d_info['status'] = 'InProgress'
-    return d_info, output_template
+            return describe_target_group_info(elbv2, lb)
+    return None
 
 
 def describe_target_group_info(elbv2, lb):
@@ -132,10 +194,11 @@ def get_elapsed_time(start_time):
     return gmt, elapsed
 
 
-def deployment_completed(index, out, statuses, exit_on_complete):
+def deployment_completed(index, scr, statuses, exit_on_complete):
     if exit_on_complete:
         if all([x == 'Completed' for x in statuses.values()]):
-            out[next(index)] = 'All deployments completed.'
+            scr.addstr(next(index), 0, 'All deployments completed.',
+                       curses.A_STANDOUT)
             return True
     return False
 

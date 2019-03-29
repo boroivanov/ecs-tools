@@ -7,6 +7,8 @@
 ECS Tools cli aims to make deploying to ECS Fargate easier. It also provides an easy way to scale
 and update environment variables.
 
+![Demo_gif](https://raw.githubusercontent.com/boroivanov/ecs-tools/master/images/ecs-tools-watcher.gif)
+
 # Install
 ```bash
 pip install ecstools
