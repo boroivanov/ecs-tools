@@ -6,7 +6,7 @@ import click
 from botocore.exceptions import ProfileNotFound, NoRegionError
 from ecstools.lib.cli import AliasedGroup, Subcommand
 
-version = '0.1.7'
+version = '0.2.0'
 
 commands_dir = os.path.join(os.path.dirname(__file__), 'commands')
 
