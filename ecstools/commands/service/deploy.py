@@ -3,7 +3,6 @@ import click
 
 from ecstools.resources.service import Service
 import ecstools.lib.utils as utils
-from ecstools.lib.config import config
 
 
 @click.command(short_help='Deploy service')
