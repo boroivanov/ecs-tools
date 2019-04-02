@@ -1,10 +1,12 @@
 import sys
 import time
 import curses
+import click
 
 from ecstools.main import version
 from ecstools.resources.service import Service
 from ecstools.resources.task_definition import TaskDefinition
+from ecstools.lib.config import config
 
 
 COLOR_MAP = {
@@ -207,3 +209,16 @@ def merge_two_dicts(x, y):
     z = x.copy()
     z.update(y)
     return z
+
+
+def get_group_services(service):
+    try:
+        if service in config['service-group']:
+            services = config['service-group'][service].split(' ')
+            return services
+        else:
+            click.echo('Error: Service group not in config file.')
+            sys.exit(1)
+    except KeyError:
+        click.echo('Error: Section "service-group" not in config file.')
+        sys.exit(1)

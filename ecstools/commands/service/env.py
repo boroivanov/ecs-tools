@@ -13,8 +13,9 @@ import ecstools.lib.utils as utils
 @click.argument('pairs', nargs=-1)
 @click.option('-d', '--delete', is_flag=True,
               help='Delete environment variable')
+@click.option('-g', '--group', is_flag=True, help='Update service group')
 @click.pass_context
-def env(ctx, cluster, service, pairs, delete):
+def env(ctx, cluster, service, pairs, delete, group):
     """Manage environment variables
 
     |\b
@@ -27,6 +28,31 @@ def env(ctx, cluster, service, pairs, delete):
     ecs = ctx.obj['ecs']
     ecr = ctx.obj['ecr']
     elbv2 = ctx.obj['elbv2']
+
+    srv_names = [service]
+    if group:
+        srv_names = utils.get_group_services(service)
+
+    services = bulk_update_service_variables(ecs, ecr, cluster, srv_names,
+                                             pairs, delete)
+    confirm_input('Do you want to deploy your changes? ')
+    bulk_deploy_service(services)
+
+    utils.monitor_deployment(ecs, elbv2, cluster, srv_names,
+                             exit_on_complete=True)
+
+
+def bulk_update_service_variables(ecs, ecr, cluster, srv_names, pairs, delete):
+    services = []
+    for service in srv_names:
+        srv = update_service_variables(ecs, ecr, cluster, service,
+                                       pairs, delete)
+        services.append(srv)
+
+    return services
+
+
+def update_service_variables(ecs, ecr, cluster, service, pairs, delete):
     srv = Service(ecs, ecr, cluster, service)
 
     click.secho('Current task definition for {} {}: {}'.format(
@@ -44,17 +70,27 @@ def env(ctx, cluster, service, pairs, delete):
 
     if new_envs == container['environment']:
         click.echo('\nNo updates')
-        sys.exit(0)
+        return False
 
     click.echo()
-    confirm_input('Do you want to deploy your changes? ')
-    td_dict = srv.update_container_environment(container, new_envs)
-    td = srv.register_task_definition(td_dict, verbose=True)
-    srv.deploy_task_definition(td, verbose=True)
+    return {
+        'srv': srv,
+        'container': container,
+        'new_envs': new_envs,
+    }
 
-    click.echo()
-    utils.monitor_deployment(ecs, elbv2, cluster, service,
-                             exit_on_complete=True)
+
+def bulk_deploy_service(services):
+    for service in services:
+        deploy_service(service)
+
+
+def deploy_service(service):
+    td_dict = service['srv'].update_container_environment(
+        service['container'],
+        service['new_envs'])
+    td = service['srv'].register_task_definition(td_dict, verbose=True)
+    service['srv'].deploy_task_definition(td, verbose=True)
 
 
 def confirm_input(text):
