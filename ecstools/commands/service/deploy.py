@@ -27,7 +27,8 @@ def deploy(ctx, cluster, service, tags, group, count, verbose):
         sys.exit(1)
 
     if group:
-        service = run_group_deployment(ctx, cluster, service, tags,
+        services = utils.get_group_services(service)
+        service = run_group_deployment(ctx, cluster, services, tags,
                                        count, verbose)
     else:
         deploy_service(ctx, cluster, service, tags, count, verbose)
@@ -41,17 +42,7 @@ def deploy_service(ctx, cluster, service, tags, count, verbose):
     srv.deploy_tags(tags, count, verbose)
 
 
-def run_group_deployment(ctx, cluster, service, tags, count, verbose):
-    try:
-        if service in config['service-group']:
-            services = config['service-group'][service].split(' ')
-
-            for srv in services:
-                deploy_service(ctx, cluster, srv, tags, count, verbose)
-            return services
-        else:
-            click.echo('Error: Service group not in config file.')
-            sys.exit(1)
-    except KeyError:
-        click.echo('Error: Section "service-group" not in config file.')
-        sys.exit(1)
+def run_group_deployment(ctx, cluster, services, tags, count, verbose):
+    for srv in services:
+        deploy_service(ctx, cluster, srv, tags, count, verbose)
+    return services
