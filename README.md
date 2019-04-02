@@ -121,15 +121,15 @@ Ctrl-C to quit the watcher. No deployments will be interrupted.
 # Example of deploying a service group
 $ grep -B 1 app1 ~/.ecstools
 [service-group]
-app1 = app1 app1-worker1 app1-worker2
-$ ecs service deploy cluster1 app1 tag123 -g
-Elapsed: 00:00:04
-InProgress  cluster1 app1          0/1  LB: [healthy: 1]
-InProgress  cluster1 app1-worker1  0/1
-InProgress  cluster1 app1-worker2  0/0
+octo = octo octo-worker1 octo-worker2
 
-Ctrl-C to quit the watcher. No deployments will be interrupted.
+$ ecs service deploy octo octo:awscp-5513185 -g
+...
+```
+![Demo_gif](https://raw.githubusercontent.com/boroivanov/ecs-tools/master/images/ecs-tools-watcher.gif)
 
+Deploying and scaling at the same time.
+```bash
 # To scale during a deployment pass `-c N`
 $ ecs service deploy cluster1 app1 tag1 -c 123
 ```
@@ -144,6 +144,7 @@ $ ecs service scale <cluster> <service> 123
 ```
 
 ## Updating environment variables
+
 Updating environment variables works by specifying cluster, service, and pairs of KEY=VALUE.
 
 The cli will get the current task definition for the service and then compare its environment variables with the ones that were passed. The cli will print a git-style diff so we can review the changes. Then it will prompt if we want to register a new task definition and deploy it. Finally, the cli starts printing the default deployment auto-update output.
@@ -165,7 +166,7 @@ Container: app1
 + TEST1=123
 + TEST2=456
 
-Do you want to create a new task definition revision?
+Do you want to deploy your changes?
 
 # Deleting environment variables
 $ ecs service env cluster1 app1 TEST1=123 TEST2=456 -d
@@ -175,7 +176,30 @@ Container: app1
 - TEST1=123
 - TEST2=456
 
-Do you want to create a new task definition revision?
+Do you want to deploy your changes?
+```
+Updating environment variables for multiple service via service groups.
+```bash
+$ env stage app1 -g TEST=123456
+Current task definition for stage app1: stage-app1:96
+1) app1
+2) nginx
+#? 1
+
+==> Container: app1
++ TEST=123456
+
+Current task definition for stage app1-worker1: stage-app1-worker1:34
+
+==> Container: app1
++ TEST=123456
+
+Current task definition for stage app1-worker2: stage-app1-worker2:38
+
+==> Container: app1
++ TEST=123456
+
+Do you want to deploy your changes?
 ```
 
 ## Monitoring
