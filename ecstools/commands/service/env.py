@@ -35,6 +35,10 @@ def env(ctx, cluster, service, pairs, delete, group):
 
     services = bulk_update_service_variables(ecs, ecr, cluster, srv_names,
                                              pairs, delete)
+
+    if not any([s['pending_deploy'] for s in services]):
+        sys.exit(0)
+
     confirm_input('Do you want to deploy your changes? ')
     bulk_deploy_service(services)
 
@@ -65,24 +69,27 @@ def update_service_variables(ecs, ecr, cluster, service, pairs, delete):
     # Just print env vars if none were passed
     if len(pairs) == 0:
         print_environment_variables(container['environment'])
+        return {'srv': srv, 'container': container, 'pending_deploy': False}
 
     new_envs = update_environment_variables(container, pairs, delete)
 
     if new_envs == container['environment']:
-        click.echo('\nNo updates')
-        return False
+        click.echo('\nNo updates\n')
+        return {'srv': srv, 'container': container, 'pending_deploy': False}
 
     click.echo()
     return {
         'srv': srv,
         'container': container,
         'new_envs': new_envs,
+        'pending_deploy': True,
     }
 
 
 def bulk_deploy_service(services):
     for service in services:
-        deploy_service(service)
+        if service['pending_deploy']:
+            deploy_service(service)
 
 
 def deploy_service(service):
@@ -187,4 +194,4 @@ def print_environment_variables(envs):
     sorted_envs = sorted(envs, key=lambda k: k['name'])
     for e in sorted_envs:
         click.echo('%s=%s' % (e['name'], e['value']))
-    sys.exit(0)
+    click.echo()
