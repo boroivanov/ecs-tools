@@ -2,6 +2,8 @@
 [![Build Status](https://travis-ci.org/boroivanov/ecs-tools.svg)](https://travis-ci.org/boroivanov/ecs-tools)
 [![Maintainability](https://api.codeclimate.com/v1/badges/2ac1865c995f49ee2eed/maintainability)](https://codeclimate.com/github/boroivanov/ecs-tools/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/2ac1865c995f49ee2eed/test_coverage)](https://codeclimate.com/github/boroivanov/ecs-tools/test_coverage)
+[![Downloads](https://pepy.tech/badge/ecstools)](https://pepy.tech/project/ecstools)
+[![Downloads](https://pepy.tech/badge/ecstools/month)](https://pepy.tech/project/ecstools)
 
 # ecstools
 ECS Tools cli aims to make deploying to ECS Fargate easier. It also provides an easy way to scale
