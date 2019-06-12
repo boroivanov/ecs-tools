@@ -7,7 +7,6 @@ notifications:
 
 install:
   - pip install tox-travis
-  - pip install -r requirements-test.txt
   - mkdir ~/.aws
   - printf "[default]\nregion = us-east-1\n[profile no-region]" > ~/.aws/config
   - printf "[default]\naws_access_key_id=XXXXXXXXXXXXXX\naws_secret_access_key=YYYYYYYYYYYYYYYYYYYYYYYYYYY\n" > ~/.aws/credentials
@@ -19,9 +18,7 @@ before_script:
   - ./cc-test-reporter before-build
 
 script:
-  - echo tests go here
-  # - python -m pytest --cov-report term-missing --cov ecstools --cov-report xml
-  # - python -m flake8 ecstools
+  - tox
 
 after_script:
   - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
