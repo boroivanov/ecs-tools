@@ -1,4 +1,7 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
 *.py[cod]
+*$py.class
 
 # Packages
 *.egg
@@ -14,14 +17,21 @@ develop-eggs
 .installed.cfg
 lib64
 __pycache__
+.pytest_cache
 
 # Installer logs
 pip-log.txt
 
 # Unit test / coverage reports
+htmlcov/
+.tox/
 .coverage
-.tox
+.coverage.*
+.cache
 nosetests.xml
+coverage.xml
+*,cover
+.hypothesis/
 
 # Translations
 *.mo
@@ -32,5 +42,8 @@ nosetests.xml
 .pydevproject
 
 # Python virtual environments
+venv/**
 py2/**
 py3/**
+
+.vscode/

@@ -1,0 +1,13 @@
+[run]
+omit =
+    tests/*
+    */tests/*
+    */resources/*
+    */lib/*
+
+[report]
+omit =
+    tests/*
+    */tests/*
+    */resources/*
+    */lib/*

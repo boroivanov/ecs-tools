@@ -1,3 +1,4 @@
-boto3
-click
-reprint
+boto3>=1.5.33
+Click>=6.0
+reprint>=0.5.1
+configparser>=3.5.0

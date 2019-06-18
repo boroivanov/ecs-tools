@@ -4,7 +4,7 @@ import click
 @click.command()
 @click.option('-A', '--arn', is_flag=True, help='Show ARN')
 @click.pass_context
-def cli(ctx, arn):
+def ls(ctx, arn):
     """List clusters"""
     ecs = ctx.obj['ecs']
     res = ecs.list_clusters()
@@ -13,5 +13,5 @@ def cli(ctx, arn):
     if not arn:
         clusters = map(lambda x: x.split('/')[-1], clusters)
 
-    for c in clusters:
+    for c in sorted(clusters):
         click.echo(c)

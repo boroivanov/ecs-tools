@@ -1,7 +1,9 @@
 import click
 import sys
 import copy
+import six
 
+from ecstools.resources.service import Service
 import ecstools.lib.utils as utils
 
 
@@ -9,9 +11,11 @@ import ecstools.lib.utils as utils
 @click.argument('cluster', nargs=1)
 @click.argument('service', nargs=1)
 @click.argument('pairs', nargs=-1)
-# @click.option('-c', '--container', help='Optional container name')
+@click.option('-d', '--delete', is_flag=True,
+              help='Delete environment variable')
+@click.option('-g', '--group', is_flag=True, help='Update service group')
 @click.pass_context
-def cli(ctx, cluster, service, pairs):
+def env(ctx, cluster, service, pairs, delete, group):
     """Manage environment variables
 
     |\b
@@ -22,113 +26,87 @@ def cli(ctx, cluster, service, pairs):
     $ ecs service env CLUSTER SERVICE KEY1=VALUE1 KEY2=VALUE2 ...
     """
     ecs = ctx.obj['ecs']
+    ecr = ctx.obj['ecr']
     elbv2 = ctx.obj['elbv2']
 
-    srv = desc_service(ecs, cluster, service)
-    td_arn = srv['taskDefinition']
-    click.secho('Current task deinition for %s %s: %s' %
-                (cluster, service, td_arn.split('/')[-1]), fg='blue')
-    td = desc_task_definition(ecs, td_arn)
-    containers = td['containerDefinitions']
+    srv_names = [service]
+    if group:
+        srv_names = utils.get_group_services(service)
 
-    if len(containers) > 1:
-        container = container_selection(containers)
-    else:
-        container = containers[0]
+    services = bulk_update_service_variables(ecs, ecr, cluster, srv_names,
+                                             pairs, delete)
 
-    click.echo()
+    if not any([s['pending_deploy'] for s in services]):
+        sys.exit(0)
 
-    click.secho(('Container: %s' % container['name']), fg='white')
+    confirm_input('Do you want to deploy your changes? ')
+    bulk_deploy_service(services)
+
+    utils.monitor_deployment(ecs, elbv2, cluster, srv_names,
+                             exit_on_complete=True)
+
+
+def bulk_update_service_variables(ecs, ecr, cluster, srv_names, pairs, delete):
+    services = []
+    for service in srv_names:
+        srv = update_service_variables(ecs, ecr, cluster, service,
+                                       pairs, delete)
+        services.append(srv)
+
+    return services
+
+
+def update_service_variables(ecs, ecr, cluster, service, pairs, delete):
+    srv = Service(ecs, ecr, cluster, service)
+
+    click.secho('Current task definition for {} {}: {}'.format(
+                cluster, service, srv.task_definition().revision()
+                ), fg='blue')
+
+    container = container_selection(srv.task_definition().containers())
+    click.secho(('\n==> Container: %s' % container['name']), fg='white')
 
     # Just print env vars if none were passed
     if len(pairs) == 0:
-        for e in container['environment']:
-            click.echo('%s=%s' % (e['name'], e['value']))
-        sys.exit(0)
+        print_environment_variables(container['environment'])
+        return {'srv': srv, 'container': container, 'pending_deploy': False}
 
-    validate_pairs(pairs)
+    new_envs = update_environment_variables(container, pairs, delete)
 
-    envs = copy.deepcopy(container['environment'])
-
-    # Update env var if it exist. Otherwise append it.
-    for pair in pairs:
-        k, v = pair.split('=', 1)
-        matched = False
-        # Check if env var already exists
-        for e in envs:
-            if k == e['name']:
-                if v != e['value']:
-                    # Env var value is different
-                    click.echo('- %s=%s' % (e['name'], e['value']))
-                    click.echo('+ ', nl=False)
-                    e['value'] = v
-                click.echo('%s=%s' % (k, v))
-                matched = True
-                break
-        if not matched:
-            click.echo('+ %s=%s' % (k, v))
-            envs.append({'name': k, 'value': v})
-
-    # Compare new and old environment variables
-    if envs == container['environment']:
-        # Nothing was updated. No need to create task definition.
-        click.echo('\nNo updates')
-        sys.exit(0)
+    if new_envs == container['environment']:
+        click.echo('\nNo updates\n')
+        return {'srv': srv, 'container': container, 'pending_deploy': False}
 
     click.echo()
-    try:
-        c = input('Do you want to create a new task definition revision? ')
-        if c not in ['yes', 'Yes', 'y', 'Y']:
-            raise
-    except:
-        sys.exit(0)
-
-    # Register new task definition with the new environment variables
-    td_name = register_task_definition_with_envs(
-        ecs, td, container['name'], envs)
-
-    # # Ask to deploy the changes
-    try:
-        to_deploy = input('Do you want to deploy your changes? ')
-        if to_deploy not in ['yes', 'Yes', 'y', 'Y']:
-            raise
-    except:
-        sys.exit(0)
-
-    # Deploy the new task definition
-    deploy_task_definition(ecs, cluster, service, td_name)
-    click.echo()
-    utils.monitor_deployment(ecs, elbv2, cluster, service)
-
-
-def register_task_definition_with_envs(ecs, current_task_definition, container, envs):
-    """ Register new task definition with the new environment variables """
-    new_td = current_task_definition.copy()
-    for k in ['status', 'compatibilities', 'taskDefinitionArn', 'revision', 'requiresAttributes']:
-        del new_td[k]
-    for c in new_td['containerDefinitions']:
-        if c['name'] == container:
-            c['environment'] = envs
-            new_td_res = ecs.register_task_definition(**new_td)
-            td_name = new_td_res['taskDefinition']['taskDefinitionArn'].split(
-                '/')[-1]
-            click.secho('Registerd new task definition: %s' %
-                        td_name, fg='green')
-
-    return td_name
-
-
-def deploy_task_definition(ecs, cluster, service, task_def):
-    click.secho('Deploing %s to %s %s...' %
-                (task_def, cluster, service), fg='blue')
-    params = {
-        'cluster': cluster,
-        'service': service,
-        'taskDefinition': task_def,
-        'forceNewDeployment': True
+    return {
+        'srv': srv,
+        'container': container,
+        'new_envs': new_envs,
+        'pending_deploy': True,
     }
-    res = ecs.update_service(**params)
-    return res
+
+
+def bulk_deploy_service(services):
+    for service in services:
+        if service['pending_deploy']:
+            deploy_service(service)
+
+
+def deploy_service(service):
+    td_dict = service['srv'].update_container_environment(
+        service['container'],
+        service['new_envs'])
+    td = service['srv'].register_task_definition(td_dict, verbose=True)
+    service['srv'].deploy_task_definition(td, verbose=True)
+
+
+def confirm_input(text):
+    try:
+        c = six.moves.input(text)
+        if c not in ['yes', 'Yes', 'y', 'Y']:
+            raise ValueError()
+    except ValueError:
+        sys.exit(0)
 
 
 def validate_pairs(pairs):
@@ -139,28 +117,81 @@ def validate_pairs(pairs):
 
 
 def container_selection(containers):
-    for c in containers:
-        click.echo('%s) %s' % (containers.index(c) + 1, c['name']))
+    if len(containers) > 1:
+        for c in containers:
+            click.echo('%s) %s' % (containers.index(c) + 1, c['name']))
+        container_number = ask_container_number(containers)
+        return containers[(int(container_number) - 1)]
+    return containers[0]
 
+
+def ask_container_number(containers):
     try:
-        c = int(input('#? '))
-        if int(c) not in range(len(containers) + 1):
-            raise
-    except:
+        container_number = int(six.moves.input('#? '))
+        if int(container_number) not in range(1, len(containers) + 1):
+            raise ValueError()
+    except ValueError:
         click.echo('Invalid input')
         sys.exit(1)
-
-    return containers[(int(c) - 1)]
-
-
-def desc_service(ecs, cluster, service):
-    res = ecs.describe_services(
-        cluster=cluster,
-        services=[service]
-    )
-    return res['services'][0]
+    return container_number
 
 
-def desc_task_definition(ecs, taskDefinition):
-    res = ecs.describe_task_definition(taskDefinition=taskDefinition)
-    return res['taskDefinition']
+def update_environment_variables(container, pairs, delete):
+    envs = copy.deepcopy(container['environment'])
+    if delete:
+        return delete_environment_variables(pairs, envs)
+    else:
+        return set_environment_variables(pairs, envs)
+
+
+def delete_environment_variables(pairs, envs):
+    for pair in pairs:
+        key = pair.split('=', 1)[0]
+        for e in envs:
+            if key == e['name']:
+                click.echo('- %s=%s' % (e['name'], e['value']))
+                envs.remove(e)
+    return envs
+
+
+def set_environment_variables(pairs, envs):
+    # Update env var if it exist. Otherwise append it.
+    validate_pairs(pairs)
+
+    for pair in pairs:
+        key, value = pair.split('=', 1)
+        envs, matched = update_env(envs, key, value)
+        if not matched:
+            envs = add_env(envs, key, value)
+    return envs
+
+
+def add_env(envs, key, value):
+    click.echo('+ %s=%s' % (key, value))
+    envs.append({'name': key, 'value': value})
+    return envs
+
+
+def update_env(envs, key, value):
+    matched = False
+    for env in envs:
+        if key == env['name']:
+            print_env_value_diff(env, key, value)
+            env['value'] = value
+            matched = True
+            break
+    return envs, matched
+
+
+def print_env_value_diff(env, key, value):
+    if value != env['value']:
+        click.echo('- %s=%s' % (env['name'], env['value']))
+        click.echo('+ ', nl=False)
+    click.echo('%s=%s' % (key, value))
+
+
+def print_environment_variables(envs):
+    sorted_envs = sorted(envs, key=lambda k: k['name'])
+    for e in sorted_envs:
+        click.echo('%s=%s' % (e['name'], e['value']))
+    click.echo()

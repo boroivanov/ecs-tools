@@ -1,65 +1,64 @@
 import click
 
+from ecstools.resources.service import Service
+import ecstools.lib.utils as utils
+
 
 @click.command()
 @click.argument('cluster')
 @click.argument('service')
 @click.pass_context
-def cli(ctx, cluster, service):
+def desc(ctx, cluster, service):
     """Describe service"""
     ecs = ctx.obj['ecs']
+    ecr = ctx.obj['ecr']
     elbv2 = ctx.obj['elbv2']
 
-    response = ecs.describe_services(
-        cluster=cluster,
-        services=[service]
+    srv = Service(ecs, ecr, cluster, service)
+
+    print_service_general_info(srv)
+    print_service_container_info(srv)
+    print_service_load_balancer_info(srv, elbv2)
+    print_service_network_info(srv)
+
+
+def print_service_general_info(srv):
+    general_info = (
+        srv.cluster(),
+        srv.name(),
+        srv.task_definition().revision(),
+        srv.launch_type()
     )
-    services = response['services']
+    counts = (
+        srv.service()['desiredCount'],
+        srv.service()['runningCount'],
+        srv.service()['pendingCount']
+    )
+    click.secho('%s %s %s %s' % (general_info), fg='blue')
+    click.secho(('Desired: %s Running: %s Pending: %s' %
+                 (counts)), fg='white')
 
-    for s in services:
 
-        # Print Service Info
-        cls_name = s['clusterArn'].split('/')[-1]
-        def_name = s['taskDefinition'].split('/')[-1]
-        general_info = (cls_name, s['serviceName'], def_name, s['launchType'])
-        counts = (s['desiredCount'], s['runningCount'], s['pendingCount'])
+def print_service_container_info(srv):
+    for c in srv.task_definition().containers():
+        img = srv.task_definition().image(c)
+        click.echo('Container:        %s @ ' % c['name'], nl=False)
+        click.echo('%s:%s' % (img['image'], img['tag']))
 
-        click.secho('%s %s %s %s' % (general_info), fg='blue')
-        click.secho(('Desired: %s Running: %s Pending: %s' %
-                     (counts)), fg='white')
-        click.echo('Created: %s' % s['createdAt'].replace(microsecond=0))
-        click.echo()
 
-        click.echo(s['roleArn'])
-        click.echo()
+def print_service_load_balancer_info(srv, elbv2):
+    for lb in srv.service()['loadBalancers']:
+        if 'targetGroupArn' in lb:
+            tg_info = utils.describe_target_group_info(elbv2, lb)
+            click.echo(
+                'Target Group:     ' +
+                '{group} {container} {port} {states}'.format(**tg_info))
 
-        for lb in s['loadBalancers']:
-            tgs_state = {}
-            if 'loadBalancerName' in lb:
-                click.echo('LoadBalancer: %s' % lb['loadBalancerName'])
-            if 'targetGroupArn' in lb:
-                click.echo('Target Group: %s' %
-                           lb['targetGroupArn'].split('/')[-2], nl=False)
-                targets = elbv2.describe_target_health(
-                    TargetGroupArn=lb['targetGroupArn'])
 
-                for t in targets['TargetHealthDescriptions']:
-                    state = t['TargetHealth']['State']
-                    if state in tgs_state:
-                        tgs_state[state] += 1
-                    else:
-                        tgs_state[state] = 1
-            click.echo('  %s' % lb['containerName'], nl=False)
-            click.echo(' %s' % lb['containerPort'], nl=False)
-            if tgs_state:
-                states = ' '.join(['{}: {}'.format(k, v)
-                                   for k, v in tgs_state.items()])
-                click.echo('  %s' % states)
-            else:
-                click.echo()
-        click.echo()
-
-        nc = s['networkConfiguration']['awsvpcConfiguration']
-        click.echo('Subnets:          %s' % " ".join(nc['subnets']))
-        click.echo('Security Groups:  %s' % " ".join(nc['securityGroups']))
-        click.echo('Public IP:        %s' % nc['assignPublicIp'])
+def print_service_network_info(srv):
+    nc = srv.service()['networkConfiguration']['awsvpcConfiguration']
+    created_at = srv.service()['createdAt'].replace(microsecond=0)
+    click.echo('Subnets:          %s' % ' '.join(nc['subnets']))
+    click.echo('Security Groups:  %s' % ' '.join(nc['securityGroups']))
+    click.echo('Public IP:        %s' % nc['assignPublicIp'])
+    click.echo('Created:          %s' % created_at)

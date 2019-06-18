@@ -2,48 +2,48 @@ import os
 import sys
 import boto3
 import click
-import string
 
-from ecstools import __version__
+from botocore.exceptions import ProfileNotFound, NoRegionError
+from ecstools.lib.cli import AliasedGroup, Subcommand
 
+version = '0.2.2'
 
-plugin_folder = os.path.join(os.path.dirname(__file__), 'commands')
-
-
-class MyCLI(click.MultiCommand):
-
-    def list_commands(self, ctx):
-        rv = []
-        alpha = string.ascii_letters
-        for filename in os.listdir(plugin_folder):
-            if filename.startswith(tuple(alpha)) and filename.endswith('.py'):
-                rv.append(filename[:-3])
-        rv.sort()
-        return rv
-
-    def get_command(self, ctx, name):
-        ns = {}
-        fn = os.path.join(plugin_folder, name + '.py')
-        if not os.path.isfile(fn):
-            click.echo('Command not found')
-            sys.exit(0)
-        with open(fn) as f:
-            code = compile(f.read(), fn, 'exec')
-            eval(code, ns, ns)
-        return ns['cli']
+commands_dir = os.path.join(os.path.dirname(__file__), 'commands')
 
 
-@click.group(cls=MyCLI)
+class ClusterCommand(Subcommand):
+    plugin_folder = os.path.join(commands_dir, 'cluster')
+
+
+class ServiceCommand(Subcommand):
+    plugin_folder = os.path.join(commands_dir, 'service')
+
+
+class TaskDefinitionCommand(Subcommand):
+    plugin_folder = os.path.join(commands_dir, 'task-definition')
+
+
+@click.command(cls=AliasedGroup)
 @click.pass_context
-@click.version_option(version=__version__, message=__version__)
+@click.version_option(version=version, message=version)
 @click.option('-p', '--profile', help='AWS profile')
 @click.option('-r', '--region', help='AWS region')
 def cli(ctx, region, profile):
     """AWS ECS deploy tools"""
-    session = boto3.session.Session(profile_name=profile, region_name=region)
-    ecs = session.client('ecs')
-    ecr = session.client('ecr')
-    elbv2 = session.client('elbv2')
+    try:
+        sess = boto3.session.Session(profile_name=profile, region_name=region)
+    except ProfileNotFound as e:
+        click.echo(e, err=True)
+        sys.exit(1)
+
+    try:
+        ecs = sess.client('ecs')
+        ecr = sess.client('ecr')
+        elbv2 = sess.client('elbv2')
+    except NoRegionError as e:
+        click.echo(e, err=True)
+        sys.exit(1)
+
     ctx.obj = {
         'region': region,
         'profile': profile,
@@ -51,6 +51,26 @@ def cli(ctx, region, profile):
         'ecr': ecr,
         'elbv2': elbv2
     }
+
+
+@cli.group(cls=ClusterCommand)
+@click.pass_context
+def cluster(ctx):
+    """Manage clusters"""
+    pass
+
+
+@cli.group(cls=ServiceCommand)
+@click.pass_context
+def service(ctx):
+    """Manage and deploy services"""
+    pass
+
+
+@cli.group(cls=TaskDefinitionCommand, name='task-definition')
+@click.pass_context
+def task_definition(ctx):
+    """Manage task definitions"""
     pass
 
 
