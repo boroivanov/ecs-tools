@@ -66,7 +66,23 @@ class Service(object):
 
         td_dict = self.update_task_definition_images(tags)
         td = self.register_task_definition(td_dict, verbose)
+        self.deploy_task_tags(td.arn())
         self.deploy_task_definition(td, verbose, count)
+
+    def deploy_task_tags(self, new_td_arn):
+        """
+        Copy tags from previous task definition
+        """
+        response = self.ecs.list_tags_for_resource(
+            resourceArn=self.task_definition().arn()
+        )
+        if len(response['tags']) == 0:
+            pass
+        else:
+            self.ecs.tag_resource(
+                resourceArn=new_td_arn,
+                tags=response['tags']
+            )
 
     def deploy_task_definition(self, taskDefinition, verbose, count=None):
         if verbose:
