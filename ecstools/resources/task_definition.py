@@ -87,6 +87,8 @@ class TaskDefinition(object):
         aws_reserved_params = ['status',
                                'compatibilities',
                                'taskDefinitionArn',
+                               'registeredAt',
+                               'registeredBy',
                                'revision',
                                'requiresAttributes'
                                ]
