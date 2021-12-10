@@ -16,7 +16,7 @@ requirements = [
 
 setup(
     name="ecstools",
-    version="0.2.4",
+    version="0.2.5",
     url="https://github.com/boroivanov/ecs-tools",
 
     author='Borislav Ivanov',

@@ -1,6 +1,6 @@
 import ecstools.main as main
 
-version = '0.2.4'
+version = '0.2.5'
 
 
 class TestMain(object):
