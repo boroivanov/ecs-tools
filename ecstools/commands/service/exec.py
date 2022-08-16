@@ -18,6 +18,8 @@ def exec(ctx, cluster, service, command, container, task):
     """Run ECS Exec"""
     ecs = ctx.obj['ecs']
     ecr = ctx.obj['ecr']
+    region = ctx.obj['region']
+    profile = ctx.obj['profile']
 
     try:
         if not task:
@@ -45,6 +47,12 @@ def exec(ctx, cluster, service, command, container, task):
 
     cmd = f'aws ecs execute-command --cluster {cluster} --task {task_id} --container {container}' \
         f' --command "{command}" --interactive'
+
+    if region:
+        cmd = f'{cmd} --region {region}'
+
+    if profile:
+        cmd = f'{cmd} --profile {profile}'
 
     try:
         subprocess.check_call(shlex.split(cmd))
